@@ -64,8 +64,10 @@ class DeleteTenantsAction(tables.DeleteAction):
                 LOG.debug('Radosgw remove user %s from endpoint: %s'
                         % (obj_id, endpoint))
                 RGW(obj_id, 'admin', authUrl=endpoint).rmUser()
-            except:
-                raise exceptions.RadosgwExceptions('Remove radosgw:user failed.')
+            except Exception as e:
+                exceptions.handle(request, _("Unable to delete rgw user."))
+        for user in api.keystone.user_list(request, obj_id):
+            api.keystone.remove_tenant_user(request, obj_id, user.id)
         api.keystone.tenant_delete(request, obj_id)
 
 
