@@ -32,9 +32,10 @@ from horizon import api
 from horizon import exceptions
 from horizon import forms
 from horizon import tables
-from .forms import CreateContainer, UploadObject, CopyObject
+from .forms import CreateContainer, ShowKeys, UploadObject, CopyObject
 from .tables import ContainersTable, ObjectsTable
 
+from horizon.api.base import url_for
 
 LOG = logging.getLogger(__name__)
 
@@ -58,6 +59,15 @@ class IndexView(tables.DataTableView):
             exceptions.handle(self.request, msg)
         return containers
 
+
+class ShowKeysView(forms.ModalFormView):
+    form_class = ShowKeys
+    template_name = 'nova/containers/showkeys.html'
+
+    def get_initial(self):
+        return {'endpoint': url_for(self.request, 'object-store'),
+                'tenant_id': self.request.session['tenant_id']}
+    
 
 class CreateView(forms.ModalFormView):
     form_class = CreateContainer

@@ -27,6 +27,7 @@ from django.utils.translation import ugettext_lazy as _
 from horizon import api
 from horizon import tables
 
+from django.conf import settings
 
 LOG = logging.getLogger(__name__)
 
@@ -93,6 +94,12 @@ class UploadObject(tables.LinkAction):
         # styles meant for the table action version.
         self.attrs = {'class': 'ajax-modal'}
 
+class ShowKeys(tables.LinkAction):
+    name = "show_keys"
+    verbose_name = _("Show Keys")
+    url = "horizon:nova:containers:show_keys"
+    classes = ("ajax-modal", "btn-create")
+
 
 def get_size_used(container):
     return filesizeformat(container.size_used)
@@ -112,7 +119,10 @@ class ContainersTable(tables.DataTable):
     class Meta:
         name = "containers"
         verbose_name = _("Containers")
-        table_actions = (CreateContainer, DeleteContainer)
+        if getattr(settings, 'SWIFT_SHOW_RADOSGW_KEYS', False):
+            table_actions = (ShowKeys, CreateContainer, DeleteContainer)
+        else:
+            table_actions = (CreateContainer, DeleteContainer)
         row_actions = (ListObjects, UploadObject, DeleteContainer)
 
 

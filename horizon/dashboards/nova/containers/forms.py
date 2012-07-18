@@ -30,6 +30,8 @@ from horizon import api
 from horizon import exceptions
 from horizon import forms
 
+from django.conf import settings
+from rgwauthAPI import RadosGW as RGW
 
 LOG = logging.getLogger(__name__)
 
@@ -52,6 +54,31 @@ class CreateContainer(forms.SelfHandlingForm):
         except:
             exceptions.handle(request, _('Unable to create container.'))
         return shortcuts.redirect("horizon:nova:containers:index")
+
+
+class ShowKeys(forms.SelfHandlingForm):
+    def __init__(self, *args, **kwargs):
+        super(ShowKeys, self).__init__(*args, **kwargs)
+        endpoint = kwargs.get('initial', {}).get('endpoint', [])
+        tenant_id = kwargs.get('initial', {}).get('tenant_id', [])
+
+        accessPoint = getattr(settings, 'RADOSGW_S3_ACCESS_POINT', endpoint)
+        user = RGW(tenant_id, None, endpoint)._userInfo()
+
+        helpStr = "Ctrl+C Copy to Clipboard"
+        self.fields['apoint'] = forms.CharField(
+            initial=accessPoint, label='Access Point', help_text=helpStr)
+        self.fields['access'] = forms.CharField(
+            initial=user["keys"][0]["access_key"], 
+            label='Access Key ID', help_text=helpStr)
+        self.fields['secret'] = forms.CharField(
+            initial=user["keys"][0]["secret_key"].replace('\\',''), 
+            label='Secret key', help_text=helpStr)
+
+        self.fields['apoint'].widget.attrs['onClick'] = \
+            self.fields['access'].widget.attrs['onClick'] = \
+            self.fields['secret'].widget.attrs['onClick'] = \
+            'Javascript:this.focus();this.select();'
 
 
 class UploadObject(forms.SelfHandlingForm):
