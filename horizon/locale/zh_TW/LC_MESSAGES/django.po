@@ -1248,6 +1248,20 @@ msgstr ""
 "不能有其他容器。但是，您可以在您的帳戶建立無限個容器。資料必須儲存在容器裡，"
 "因此您必須在帳戶內建立至少一個容器，才能上傳資料。"
 
+#: dashboards/nova/templates/nova/containers/_showkeys.html:16
+msgid ""
+"We also support the Amazon &reg; AWS S3 compatible service. If you want to "
+"try a fresh, the Access Key & Secret Key are shown in the left side. Moreover, "
+"you can also mount a bucket as local drive by Gladinet &reg; or other clients "
+"use S3 API.    Notice! Dashboard still *NOT* support directory in bucket, so "
+"you can't see the files in directory which is uploaded from S3 API."
+msgstr ""
+"我們也提供了相容於 Amazon &reg; AWS S3 的服務。  如果您想試試，左邊提供了必要的 "
+"Access Key & Secret Key。  而且，您還可以試著用像 Gladinet &reg; 這樣支援 S3 "
+"API 的軟體把專案裡的 bucket 掛載到本地端的機器上當作一顆磁碟。   請注意! 目前為"
+"止，Dashboard 還*不支援*顯示 bucket 裡的資料夾，所以如果您使用 S3 的協定上傳資料"
+"夾，將不會顯示在 dashboard 上。"
+
 #: dashboards/nova/templates/nova/images_and_snapshots/index.html:3
 #: dashboards/nova/templates/nova/images_and_snapshots/index.html:6
 msgid "Images &amp; Snapshots"
