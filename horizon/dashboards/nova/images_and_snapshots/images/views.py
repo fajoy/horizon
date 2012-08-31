@@ -64,6 +64,11 @@ class LaunchView(forms.ModalFormView):
         context = super(LaunchView, self).get_context_data(**kwargs)
         try:
             context['usages'] = api.tenant_quota_usages(self.request)
+            for usage in context['usages']:
+                if usage != "floating_ips" and context['usages'][usage]['available'] <= 0:
+                    context['usages']['disabled'] = 'disabled=disabled'
+                    break
+            context['usages'].setdefault('disabled', '')
         except:
             exceptions.handle(self.request)
         return context
