@@ -78,7 +78,7 @@ class LaunchView(forms.ModalFormView):
             flavors = api.flavor_list(self.request)
             flavor_list = [(flavor.id, display % {"name": flavor.name,
                                                   "vcpus": flavor.vcpus,
-                                                  "disk": flavor.disk,
+                                                  "disk": getattr(flavor, "OS-FLV-EXT-DATA:ephemeral"),
                                                   "ram": flavor.ram})
                                                 for flavor in flavors]
         except:

@@ -412,8 +412,7 @@ def tenant_quota_usages(request):
     usages = {'instances': {'flavor_fields': [], 'used': len(instances)},
               'cores': {'flavor_fields': ['vcpus'], 'used': 0},
               'gigabytes': {'used': swift_get_total_size(request)/1024/1024/1024,
-                            'flavor_fields': ['disk',
-                                              'OS-FLV-EXT-DATA:ephemeral']},
+                            'flavor_fields': ['OS-FLV-EXT-DATA:ephemeral']},
               'ram': {'flavor_fields': ['ram'], 'used': 0},
               'floating_ips': {'flavor_fields': [], 'used': len(floating_ips)}}
 

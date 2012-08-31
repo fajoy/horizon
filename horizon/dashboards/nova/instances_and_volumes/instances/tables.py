@@ -205,10 +205,11 @@ def get_ips(instance):
 
 def get_size(instance):
     if hasattr(instance, "full_flavor"):
-        size_string = _("%(RAM)s RAM | %(VCPU)s VCPU | %(disk)s Disk")
+        size_string = _("%(RAM)s RAM | %(VCPU)s VCPU | %(disk)s Disk(vdb)")
         vals = {'RAM': sizeformat.mbformat(instance.full_flavor.ram),
                 'VCPU': instance.full_flavor.vcpus,
-                'disk': sizeformat.diskgbformat(instance.full_flavor.disk)}
+                'disk': sizeformat.diskgbformat(
+                        getattr(instance.full_flavor, 'OS-FLV-EXT-DATA:ephemeral'))}
         return size_string % vals
     return _("Not available")
 
