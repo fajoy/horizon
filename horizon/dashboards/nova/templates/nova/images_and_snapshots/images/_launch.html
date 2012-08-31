@@ -34,7 +34,7 @@
   <div class="quota_bar">{% horizon_progress_bar usages.cores.used usages.cores.quota %}</div>
 
   <div class="quota_title">
-    <strong>{% trans "Disk" %} <span>({{ usages.gigabytes.used }} {% trans "GB" %})</span></strong>
+    <strong>{% trans "Disk" %}+{% trans "Containers" %} <span>({{ usages.gigabytes.used }} {% trans "GB" %})</span></strong>
     <p>{{ usages.gigabytes.available|quota:"GB" }}</p>
   </div>
   <div class="clearfix"></div>

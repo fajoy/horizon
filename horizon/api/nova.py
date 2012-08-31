@@ -30,6 +30,7 @@ from novaclient.v1_1.security_groups import SecurityGroup as NovaSecurityGroup
 from novaclient.v1_1.servers import REBOOT_HARD
 
 from horizon.api.base import APIResourceWrapper, APIDictWrapper, url_for
+from horizon.api.swift import swift_get_total_size
 
 from django.utils.translation import ugettext as _
 
@@ -410,7 +411,7 @@ def tenant_quota_usages(request):
     flavors = dict([(f.id, f) for f in flavor_list(request)])
     usages = {'instances': {'flavor_fields': [], 'used': len(instances)},
               'cores': {'flavor_fields': ['vcpus'], 'used': 0},
-              'gigabytes': {'used': 0,
+              'gigabytes': {'used': swift_get_total_size(request)/1024/1024/1024,
                             'flavor_fields': ['disk',
                                               'OS-FLV-EXT-DATA:ephemeral']},
               'ram': {'flavor_fields': ['ram'], 'used': 0},

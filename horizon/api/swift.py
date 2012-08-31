@@ -94,6 +94,15 @@ def swift_get_containers(request, marker=None):
     else:
         return (containers, False)
 
+def swift_get_total_size(request):
+    size=0
+    try:
+        containers = swift_api(request).get_all_containers(10000,None)
+    except Exception:
+        containers = None
+    for container in containers:
+        size += container.size_used
+    return size
 
 def swift_create_container(request, name):
     if swift_container_exists(request, name):
