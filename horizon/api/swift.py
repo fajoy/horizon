@@ -98,10 +98,10 @@ def swift_get_total_size(request):
     size=0
     try:
         containers = swift_api(request).get_all_containers(10000,None)
+        for container in containers:
+            size += container.size_used
     except Exception:
         containers = None
-    for container in containers:
-        size += container.size_used
     return size
 
 def swift_create_container(request, name):
