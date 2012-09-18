@@ -1,6 +1,5 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright 2012 Openstack, LLC
 # Copyright 2012 Nebula, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -18,14 +17,12 @@
 from django.utils.translation import ugettext_lazy as _
 
 import horizon
+from horizon.dashboards.settings import dashboard
 
 
-class Settings(horizon.Dashboard):
-    name = _("Settings")
-    slug = "settings"
-    panels = ('user', 'password')
-    default_panel = 'user'
-    nav = False
+class UserDataPanel(horizon.Panel):
+    name = _("User Data")
+    slug = 'password'
 
 
-horizon.register(Settings)
+dashboard.Settings.register(UserDataPanel)

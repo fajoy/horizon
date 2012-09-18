@@ -1,0 +1,15 @@
+{% extends "horizon/common/_modal_form.html" %}
+{% load i18n %}
+
+{% block modal-header %}{% trans "Update User" %}{% endblock %}
+
+{% block modal-body %}
+<div class="left">
+    <a href="/settings/password/{{ user_id }}/update/" class="btn btn-small ajax-modal">{% trans "Update User" %}{% trans "Password" %}</a>
+</div>
+<div class="right">
+    <h3>{% trans "Description" %}:</h3>
+    <p>{% trans "From here you can edit the user by changing their username, email, password, and default project." %}</p>
+</div>
+{% endblock %}
+

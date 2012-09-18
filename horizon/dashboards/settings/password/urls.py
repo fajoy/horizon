@@ -1,6 +1,5 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright 2012 Openstack, LLC
 # Copyright 2012 Nebula, Inc.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -15,17 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from django.utils.translation import ugettext_lazy as _
+from django.conf.urls.defaults import patterns, url
 
-import horizon
+from .views import UpdateView
 
-
-class Settings(horizon.Dashboard):
-    name = _("Settings")
-    slug = "settings"
-    panels = ('user', 'password')
-    default_panel = 'user'
-    nav = False
-
-
-horizon.register(Settings)
+urlpatterns = patterns('horizon.dashboards.settings.password.views',
+    url(r'^$', 'index', name='index'),
+    url(r'^(?P<user_id>[^/]+)/update/$', UpdateView.as_view(), name='update'))
