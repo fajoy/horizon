@@ -63,16 +63,22 @@ class ShowKeys(forms.SelfHandlingForm):
         tenant_id = kwargs.get('initial', {}).get('tenant_id', [])
 
         accessPoint = getattr(settings, 'RADOSGW_S3_ACCESS_POINT', endpoint)
-        user = RGW(tenant_id, None, endpoint)._userInfo()
+        subuser='dashboardS3'
+        rgw = RGW(tenant_id, subuser, endpoint)
+        s3user = rgw._subuserCreate(keyType='s3')
+        for key in s3user["keys"]:                
+            if (tenant_id+':'+subuser) == key['user']:
+                accessKey = key["access_key"]
+                secretKey = key["secret_key"]
 
         helpStr = "Ctrl+C Copy to Clipboard"
         self.fields['apoint'] = forms.CharField(
             initial=accessPoint, label='Access Point', help_text=helpStr)
         self.fields['access'] = forms.CharField(
-            initial=user["keys"][0]["access_key"], 
+            initial=accessKey, 
             label='Access Key ID', help_text=helpStr)
         self.fields['secret'] = forms.CharField(
-            initial=user["keys"][0]["secret_key"].replace('\\',''), 
+            initial=secretKey.replace('\\',''), 
             label='Secret key', help_text=helpStr)
 
         self.fields['apoint'].widget.attrs['onClick'] = \
