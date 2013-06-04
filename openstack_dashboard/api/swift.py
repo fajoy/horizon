@@ -220,6 +220,7 @@ def swift_upload_object(request, container_name, object_name, object_file):
     etag = swift_api(request).put_object(container_name,
                                          object_name,
                                          object_file,
+                                         content_length=object_file.size,
                                          headers=headers)
     obj_info = {'name': object_name, 'bytes': object_file.size, 'etag': etag}
     return StorageObject(obj_info, container_name)
