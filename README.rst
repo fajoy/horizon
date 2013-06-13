@@ -1,4 +1,36 @@
 =============================
+開發筆記
+=============================
+
+* 加入模組
+
+編輯 openstack_dashboard/local/local_settings.py
+
+
+    INSTALLED_APPS = (
+        'openstack_dashboard',
+        'django.contrib.contenttypes',
+        'django.contrib.auth',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'django.contrib.humanize',
+        'compressor',
+        'horizon',
+        'openstack_dashboard.dashboards.project',
+        'openstack_dashboard.dashboards.admin',
+        'openstack_dashboard.dashboards.settings',
+        'openstack_auth',
+        'custom',
+    )
+
+參考文件
+
+  * http://docs.openstack.org/developer/horizon/topics/tutorial.html
+
+
+
+
 Horizon (OpenStack Dashboard)
 =============================
 
