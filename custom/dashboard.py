@@ -6,7 +6,7 @@ import horizon
 class Custom(horizon.Dashboard):
     name = _("Custom")
     slug = "custom"
-    panels = ('ec2')   
+    panels = ('ec2' , 'status' , 'hadoop' )   
     default_panel = 'ec2'  
 
 horizon.register(Custom)
