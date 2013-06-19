@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% trans "Script" %}{% endblock %}
+
+{% block page_header %}
+  {% include "horizon/common/_page_header.html" with title=_("Script") %}
+{% endblock page_header %}
+
+{% block main %}
+  {% include "custom/config/_show_script.html" %}
+{% endblock %}
