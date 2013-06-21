@@ -1,12 +1,24 @@
 =============================
 開發筆記
 =============================
+* Ubuntu 12.04套件需求 ::
+
+    apt-get install git gcc python-virtualenv  python-dev nodejs
+
+* 下載安裝 ::
+
+    git clone https://github.com/fajoy/horizon.git    
+    cd horizon
+    cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
+    ./run_tests.sh
+
+目前因有修改swift api 的部分,因此會有test error出現,但不影響執行運作.
 
 * 加入模組
 
-編輯 openstack_dashboard/local/local_settings.py
+編輯 openstack_dashboard/local/local_settings.py ::
 
-
+    OPENSTACK_HOST = "openstack-grizzly.it.nctu.edu.tw"
     INSTALLED_APPS = (
         'openstack_dashboard',
         'django.contrib.contenttypes',
@@ -24,11 +36,22 @@
         'custom',
     )
 
+不需DEBUG 可修改為 ::
+
+    DEBUG = False
+    DEBUG404 = False
+    TEMPLATE_DEBUG = False
+    PROD = True
+    USE_SSL = False
+
+
+* 啟動測試 ::
+
+    ./run_tests.sh --runserver 0.0.0.0:8000
+
 參考文件
 
   * http://docs.openstack.org/developer/horizon/topics/tutorial.html
-
-
 
 
 Horizon (OpenStack Dashboard)
