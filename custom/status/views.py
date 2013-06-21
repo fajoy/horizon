@@ -26,8 +26,7 @@ log = logging.getLogger("Custom")
 
 from horizon import conf
 def now():
-    import time
-    import datetime
+    import time,datetime
     return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
 
 
@@ -128,9 +127,8 @@ def getHostList(request):
     no_objs_ids=instances_ids - objs_ids
     for id in no_objs_ids:
         server=instance_servers[id]
-        datum={"id":server.id,
+        datum={"uuid":server.id,
                 "name": server.name,
-                "state": "unknow",
                 "update_time": now()
                 }
         saveHost(request,server.id,datum)
@@ -140,15 +138,11 @@ def getHostList(request):
         delHost(request,id)
     
 
-    for id in instance_servers.keys():
-        datum={"id":id ,
-                "name": "unknow",
-                "state": None,
-                "update_time": "unknow"
-                }
+    for i in instances:
+        id = i.id
+        datum={"uuid":id ,}
         data.append(datum)
                         
-#    data = [ json.loads(getObj(request,container_name,item["name"]) for item in items ]
     return data
 
 from openstack_dashboard.dashboards.project.access_and_security.api_access.views import download_ec2_bundle
@@ -183,16 +177,27 @@ class TerminateInstance(tables.BatchAction):
         delHost(request,obj_id)
 
 
-
-
 def getName(datum):
-    return datum["name"]
+    return datum.get("name","unknow")
 
 def getState(datum):
-    return datum["state"]
+    return datum.get("state","unknow")
 
 def get_update_time(datum):
-    return datum["update_time"]
+    return datum.get("update_time","unknow")
+
+def getEc2_id(datum):
+    return datum.get("id","unknow")
+
+def getAddress(datum):
+    ip = datum.get("ip_address","unknow")
+    _ip = datum.get("private_ip_address","unknow")
+    if ip ==_ip:
+        return ip
+    else:
+        return "%s , %s"%(_ip,ip)
+
+
 
 class UpdateRow(tables.Row):
     ajax = True
@@ -206,25 +211,33 @@ class UpdateRow(tables.Row):
 from openstack_dashboard.dashboards.project.instances.tables import AssociateIP,SimpleDisassociateIP
 class StatusTable(tables.DataTable):
     STATE_CHOICES = (
-        ("unknow", True),
+        ("running", True),
     )
     name = tables.Column(getName,
                          link=("horizon:custom:status:detail"),
                          verbose_name=_("Name"))
+
+    ec2_id = tables.Column(getEc2_id,
+                         link=("horizon:custom:status:detail"),
+                         verbose_name=_("EC2"))
+
     state = tables.Column(getState ,
                         verbose_name="State",
                          status=False,
                          status_choices=STATE_CHOICES,
-
                 )
+    address = tables.Column(getAddress ,
+                        verbose_name="Address",
+                )
+
     update_time = tables.Column(get_update_time,
                         verbose_name="Update" ,
                     )
     def get_object_id(self, datum):
-        return datum["id"]
+        return datum["uuid"]
 
     def get_object_display(self, datum):
-        return datum["name"]
+        return  datum.get("name","unknow")
 
     class Meta:
         name = "Status"
