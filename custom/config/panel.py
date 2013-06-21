@@ -5,9 +5,9 @@ import horizon
 from custom import dashboard
 
 
-class Status(horizon.Panel):
-    name = _("Status")
-    slug = "status"
+class Config(horizon.Panel):
+    name = _("Config")
+    slug = "config"
 
 
-dashboard.Custom.register(Status)
+dashboard.Custom.register(Config)

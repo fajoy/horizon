@@ -14,7 +14,6 @@ class CreateEC2Key(tables.Action):
     classes = ("btn-create" ,)
 
     def single(self, data_table, request, object_ids):
-        self.success_url=request.get_full_path()+"test"
         user_id=request.user.id
         tenant_id=request.user.tenant_id
         try:
@@ -44,7 +43,7 @@ class DeleteEC2Key(tables.DeleteAction):
             messages.error(request,"Create Error")
 
 class _Table(tables.DataTable):
-    access = tables.Column("access")
+    access = tables.Column("access",verbose_name="Access")
     secret = tables.Column("secret")
 
     def get_object_id(self, datum):
@@ -61,4 +60,6 @@ class IndexView(tables.DataTableView):
     template_name = 'custom/ec2/tables.html'
     table_class = _Table
     def get_data(self):
-        return api.keystone.list_ec2_credentials(self.request,self.request.user.id)
+        tenant_id=self.table.request.user.tenant_id
+        data = [datum for datum in  api.keystone.list_ec2_credentials(self.request,self.request.user.id) if datum.tenant_id == tenant_id]
+        return data
