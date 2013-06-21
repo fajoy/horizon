@@ -86,23 +86,10 @@ def getKeys(request):
         exceptions.handle(request,
                           _('Unable to fetch EC2 credentials.'),
                           redirect=request.build_absolute_uri())
-    try:
-        s3_endpoint = api.base.url_for(request,
-                                       's3',
-                                       endpoint_type='publicURL')
-    except exceptions.ServiceCatalogException:
-        s3_endpoint = None
-    try:
-        ec2_endpoint = api.base.url_for(request,
-                                        'ec2',
-                                        endpoint_type='publicURL')
-    except exceptions.ServiceCatalogException:
-        ec2_endpoint = None
 
     context = {'ec2_access_key': keys.access,
                'ec2_secret_key': keys.secret,
-               'ec2_endpoint': ec2_endpoint,
-               's3_endpoint': s3_endpoint}
+               }
     return context
 
 
@@ -126,13 +113,13 @@ def getTemplateScriptRender(request,name):
     script = getScript(request,name)
     c = getKeys(request)
     c["tenant_id"]=request.user.tenant_id
+    c["user_id"]=request.user.id
     c["container_name"]=getCustomContainerName(request)
     """
     {{ ec2_access_key }}
     {{ ec2_secret_key }}
-    {{ ec2_endpoint }}
-    {{ s3_endpoint }}
     {{ tenant_id }}
+    {{ user_id }}
     {{ container_name }}
     """
     print c
@@ -166,7 +153,7 @@ class ScriptForm(forms.SelfHandlingForm):
                             regex=r"^\w+$"
                             )
     customization_script = forms.CharField(
-                                           widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px; width: 500px;' }),
+                                           widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px; width: 600px;' }),
                                            label=_("Customization Script"),
                                            required=False,
                                            help_text=_("A script or set of "
@@ -174,7 +161,8 @@ class ScriptForm(forms.SelfHandlingForm):
                                                        "executed after the "
                                                        "instance has been "
                                                        "built (max 16kb)."))
-
+    class Meta:
+        pass
     def __init__(self, *args, **kwargs):
         super(ScriptForm, self).__init__(*args, **kwargs)
 
@@ -206,6 +194,13 @@ class EditScriptView(forms.ModalFormView):
     def get_context_data(self, **kwargs):
         context = super(EditScriptView, self).get_context_data(**kwargs)
         context['name'] = self.kwargs["name"]
+        context["var_args"]="""
+    {{ ec2_access_key }}
+    {{ ec2_secret_key }}
+    {{ tenant_id }}
+    {{ user_id }}
+    {{ container_name }}
+"""
         return context
 
 class CreateScriptView(forms.ModalFormView):
@@ -223,6 +218,13 @@ class CreateScriptView(forms.ModalFormView):
 
     def get_context_data(self, **kwargs):
         context = super(CreateScriptView, self).get_context_data(**kwargs)
+        context["var_args"]="""
+    {{ ec2_access_key }}
+    {{ ec2_secret_key }}
+    {{ tenant_id }}
+    {{ user_id }}
+    {{ container_name }}
+"""
         return context
 
 class ShowScriptView(forms.ModalFormView):
@@ -284,6 +286,83 @@ class EditScript(tables.LinkAction):
     def get_link_url(self, datum):
         return reverse(self.url, args=(datum["name"] ,))
 
+from horizon import workflows
+from ..config.views import getScriptList,getTemplateScriptRender
+
+class CustomizeAction(workflows.Action):
+    customization_script_name = forms.ChoiceField(label=_("Customization Script"),
+                                             required=False,
+                                           help_text=_("A script or set of "
+                                                       "commands to be "
+                                                       "executed after the "
+                                                       "instance has been "
+                                                       "built (max 16kb)."))
+
+    def populate_customization_script_name_choices(self, request, context):
+        
+        choices = [(datum["name"],datum["name"]) 
+                   for datum in getScriptList(request)
+                   if (datum["bytes"]>0) ]
+        if choices:
+            choices.insert(0, ("", _("Select custom script")))
+        else:
+            choices.insert(0, ("", _("No custom script available.")))
+        return choices
+
+
+    class Meta:
+        name = _("Post-Creation")
+        help_text_template = ("project/instances/"
+                              "_launch_customize_help.html")
+
+class PostCreationStep(workflows.Step):
+    action_class = CustomizeAction
+    contributes = ("customization_script",)
+
+    def contribute(self, data, context):
+        request = self.workflow.request
+        name = data.get("customization_script_name", "")
+        if name:
+            script = getTemplateScriptRender(request,name)
+            context['customization_script'] = script
+        return context
+
+from openstack_dashboard.dashboards.project.instances.workflows import LaunchInstance, SelectProjectUser,SetInstanceDetails, SetAccessControls,   SetNetwork, VolumeOptions
+from django.views.decorators.debug import sensitive_variables
+from django.utils.text import normalize_newlines
+class CustomLaunchInstance(LaunchInstance):
+    name = _("Launch Instance")
+    finalize_button_name = _("Launch")
+    success_message = _('Launched %(count)s named "%(name)s".')
+    failure_message = _('Unable to launch %(count)s named "%(name)s".')
+    success_url = "horizon:project:instances:index"
+    default_steps = (SelectProjectUser,
+                     SetInstanceDetails,
+                     SetAccessControls,
+                     SetNetwork,
+                     VolumeOptions,
+                     PostCreationStep)
+
+
+
+class LaunchInstanceView(workflows.WorkflowView):
+    workflow_class = CustomLaunchInstance
+
+    def get_initial(self):
+        initial = super(LaunchInstanceView, self).get_initial()
+        initial['project_id'] = self.request.user.tenant_id
+        initial['user_id'] = self.request.user.id
+        return initial
+
+
+class LaunchLink(tables.LinkAction):
+    name = "launch"
+    verbose_name = _("Launch Instance")
+    url = "horizon:custom:config:launch"
+    classes = ("ajax-modal", "btn-create")
+ 
+
+
 class ScriptTable(tables.DataTable):
     name = tables.Column('name',
             link=("horizon:custom:config:show_script"),
@@ -300,7 +379,7 @@ class ScriptTable(tables.DataTable):
     class Meta:
         name = "script_list"
         verbose_name = "Customization Script"
-        table_actions = (CreateScript , DeleteScript )
+        table_actions = (CreateScript , DeleteScript , LaunchLink )
         row_actions = ( EditScript ,DeleteScript  ,)
 
 

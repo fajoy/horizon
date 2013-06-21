@@ -4,6 +4,7 @@ from .views import IndexView
 from .views import ShowScriptView
 from .views import EditScriptView
 from .views import CreateScriptView
+from .views import LaunchInstanceView
 
 
 urlpatterns = patterns('',
@@ -11,4 +12,5 @@ urlpatterns = patterns('',
     url(r'^script/(?P<name>[^/]+)/show$', ShowScriptView.as_view(), name='show_script'),
     url(r'^script/create$', CreateScriptView.as_view(), name='create_script'),
     url(r'^script/(?P<name>[^/]+)/edit$', EditScriptView.as_view(), name='edit_script'),
+    url(r'^launch$', LaunchInstanceView.as_view(), name='launch'),
 )
