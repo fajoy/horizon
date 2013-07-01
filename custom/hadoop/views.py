@@ -95,7 +95,7 @@ def setHadoopGroup(request,data):
     container_name = getCustomContainerName(request)
     key = ".hadoop/.%s" %(data["hadoop_group_id"])
     createContainer(request,container_name)
-    setObj(request,container_name,key,data)
+    setObj(request,container_name,key,json.dumps(data))
 
 def getEc2Keys(request):
     tenant_id = request.user.tenant_id
