@@ -1,6 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 from horizon import exceptions
 from openstack_dashboard import api
+from django.conf import settings
 
 
 from django.http import HttpResponse
@@ -23,6 +24,7 @@ import logging
 log = logging.getLogger("Custom")
 
 
+HADOOP_IMAGE_LIST=getattr(settings,"HADOOP_IMAGE_LIST" , [] ) 
 CUSTOM_HADOOP_PREFIX= ".hadoop/" 
 
 
