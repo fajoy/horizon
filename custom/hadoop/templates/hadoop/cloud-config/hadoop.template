@@ -21,11 +21,12 @@ repo_update: true
 packages:
  - python-pip
 
+{% if admin_pass %}
 chpasswd:
   list: |
     root:{{admin_pass}}
   expire: False
-
+{% endif %}
 ssh_pwauth: True
 
 ssh_keys:
@@ -123,10 +124,10 @@ echo "====BEGIN rc.sh======="
 sudo ifconfig eth0 mtu 1454
 cp /var/lib/cloud/data/previous-instance-id /etc/hostname
 hostname -F /etc/hostname
-echo `awk 'BEGIN{n=-1} /^S.local-ipv4.$/{ n=NR+2 } (NR==n){printf $0} '  < /var/lib/cloud/instance/obj.pkl   |sed "s/[S']//g"`   `cat /etc/hostname` >> /etc/hosts
-echo -n "{{ tenant_id }}" > /root/tenant_id 
-echo -n "{{ hadoop_group_id }}" > /root/hadoop_group_id 
-echo -n "{{ hadoop_master_id }}" > /root/hadoop_master_id
+echo `awk 'BEGIN{n=-1} /^S.local-ipv4.$/{ n=NR+2 } (NR==n){printf $0} '  < /var/lib/cloud/instance/obj.pkl   |sed "s/[S']//g"`   `cat /etc/hostname` |tee /etc/hosts
+echo -n "{{ tenant_id }}" |tee /root/tenant_id |xargs echo tenant_id 
+echo -n "{{ hadoop_group_id }}" |tee /root/hadoop_group_id |xargs echo hadoop_group_id
+echo -n "{{ hadoop_master_id }}" |tee /root/hadoop_master_id |xargs echo hadoop_master_id
 echo "====Install boto======="
 pip install boto --upgrade
 echo "====make script======="

@@ -16,6 +16,7 @@ from horizon import exceptions
 from horizon import workflows
 from horizon import forms
 from django.core.urlresolvers import reverse
+from django.core.urlresolvers import resolve
 
 import uuid
 import json
@@ -74,7 +75,16 @@ def getHadoopGroupList(request):
     for d in data:
         d.update({"hadoop_group_id":d["name"][-36:]})
     return data
-        
+ 
+def getHadoopInstancesList(request,group_id):
+    container_name=getCustomContainerName(request)
+    prefix= CUSTOM_HADOOP_PREFIX+group_id+"/hosts/"
+    data = getObjList(request,container_name,prefix=prefix)
+    for d in data:
+        d.update({"uuid":d["name"][-36:]})
+    return data
+ 
+       
 def genId():
     return str(uuid.uuid1())
 
@@ -136,13 +146,13 @@ class SetAccessControlsAction(workflows.Action):
                                                    "authentication."),
                                        add_item_link=KEYPAIR_IMPORT_URL)
     admin_pass = forms.RegexField(
-            label=_("Admin Pass"),
+            label=_("Root Pass"),
             required=False,
             widget=forms.PasswordInput(render_value=False),
             regex=validators.password_validator(),
             error_messages={'invalid': validators.password_validator_msg()})
     confirm_admin_pass = forms.CharField(
-            label=_("Confirm Admin Pass"),
+            label=_("Confirm Root Pass"),
             required=False,
             widget=forms.PasswordInput(render_value=False))
     groups = forms.MultipleChoiceField(label=_("Security Groups"),
@@ -340,6 +350,7 @@ class CreateHadoopGroup(workflows.Workflow):
         data["container_name"]=getCustomContainerName(request)
         data["hadoop_group_id"]=hadoop_group_id
         data["hadoop_master_id"]=""
+        data.update(context)
         custom_script = render_to_string(template,data)
         try:
             master = api.nova.server_create(request,
@@ -353,18 +364,15 @@ class CreateHadoopGroup(workflows.Workflow):
                                    nics=nics,
                                    instance_count = 1,
                                    admin_pass=context['admin_pass'])
+            master = api.nova.server_get(request, master.id)
             data["hadoop_master_id"] = master.id
+            data["hadoop_master_name"] = master.internal_name
             custom_script = render_to_string(template,data)
-        except:
-            exceptions.handle(request)
-            return False
 
-        data.update(context)
-        del  data["confirm_admin_pass"]
-        del  data["admin_pass"]
-        setHadoopGroup(request,data)
+            del  data["confirm_admin_pass"]
+            del  data["admin_pass"]
+            setHadoopGroup(request,data)
 
-        try:
             api.nova.server_create(request,
                                    context['name']+'-slave',
                                    context['source_id'],
@@ -376,6 +384,7 @@ class CreateHadoopGroup(workflows.Workflow):
                                    nics=nics,
                                    instance_count = int(context['count']),
                                    admin_pass=context['admin_pass'])
+
         except:
             exceptions.handle(request)
             return False
@@ -399,24 +408,37 @@ class LaunchGroupLink(tables.LinkAction):
     classes = ("ajax-modal", "btn-create")
     
 
-def getHadoopGroup(request,id):
-    key=CUSTOM_HADOOP_PREFIX+"."+id
+def getHadoopGroup(request,group_id):
+    key=CUSTOM_HADOOP_PREFIX+"."+group_id
     container_name=getCustomContainerName(request)
     return getObj(request,container_name,key)
 
 
-class HadoopGroupUpdateRow(tables.Row):
+def getHadoopInstance(request,group_id,instance_id):
+    key=CUSTOM_HADOOP_PREFIX+group_id+"/hosts/"+instance_id
+    container_name=getCustomContainerName(request)
+    return getObj(request,container_name,key)
+
+
+class HadoopIndexUpdateRow(tables.Row):
     ajax = True
     def get_data(self, request,id):
-        datum = json.loads( getHadoopGroup(request,id))
+        datum = json.loads(getHadoopGroup(request,id))
         return datum
 
 
-class HadoopGroupTable(tables.DataTable):
+class HadoopIndexTable(tables.DataTable):
+    class Meta:
+        name = "Hadoop Group"
+        status_columns = ["ajax_state" , ]
+        table_actions = (LaunchGroupLink , )
+        row_class = HadoopIndexUpdateRow
+
+
     hadoop_group_id = tables.Column( 
                         "hadoop_group_id" , 
                         verbose_name=_("id"),
-                        link=("horizon:custom:hadoop:detail"),
+                        link=("horizon:custom:hadoop:group"),
                         )
 
     AJAX_STATE = (
@@ -454,17 +476,117 @@ class HadoopGroupTable(tables.DataTable):
         return datum["hadoop_group_id"]
     def get_object_display(self, datum):
         return datum["hadoop_group_id"]
+
+from django.utils.http import urlencode
+from openstack_dashboard.dashboards.project.instances.tables import  POWER_STATES
+class  HadoopGroupUpdateRow(tables.Row):
+    ajax = True
+    def get_data(self, request,instance_id):
+        func, args, kwargs = resolve(request.META["PATH_INFO"])
+        datum = json.loads( getHadoopInstance(request,kwargs['group_id'],instance_id))
+        try:
+            instance = api.nova.server_get(request, instance_id)
+            datum['state'] = POWER_STATES.get(getattr(instance, "OS-EXT-STS:power_state", 0), '')
+        except:
+            pass
+        return datum
+
+    def get_ajax_update_url(self):
+        table_url = self.table.get_absolute_url()
+        
+        params = urlencode({"table": self.table.name,
+                            "action": self.ajax_action_name,
+                            "obj_id": self.table.get_object_id(self.datum),
+                                })
+        return "%s?%s" % (table_url, params)
+
+
+
+class HadoopGroupTable(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
+        table_actions = ()
         status_columns = ["ajax_state" , ]
-        table_actions = (LaunchGroupLink , )
         row_class = HadoopGroupUpdateRow
 
 
+    uuid = tables.Column("uuid",
+                         verbose_name=_("uuid"))
+
+    AJAX_STATE = (
+        ("ok", True),
+    )
+    def getState(datum):
+        if datum.has_key("id"):
+            return "ok"
+        return None
+    ajax_state = tables.Column(getState ,
+                        verbose_name="State",
+                         status=True,
+                         status_choices=AJAX_STATE,
+                        hidden=True,
+                )
+
+
+    def getName(datum):
+        return datum.get("name",None)
+    
+    name = tables.Column(getName,
+                         link=("horizon:custom:hadoop:detail"),
+                         verbose_name=_("Name"))
+    def getState(datum):
+        return datum.get("state",None)
+    
+    def get_update_time(datum):
+        return datum.get("update_time",None)
+    
+    def getEc2_id(datum):
+        return datum.get("id","unknow")
+    
+    def getAddress(datum):
+        ip = datum.get("ip_address","unknow")
+        _ip = datum.get("private_ip_address","unknow")
+        if ip ==_ip:
+            return ip
+        else:
+            return "%s , %s"%(_ip,ip)
+
+
+    ec2_id = tables.Column(getEc2_id,
+                         link=("horizon:custom:hadoop:detail"),
+                         verbose_name=_("EC2"))
+
+    state = tables.Column(getState ,
+                        verbose_name="State",
+                )
+    address = tables.Column(getAddress ,
+                        verbose_name="Address",
+                )
+
+    update_time = tables.Column(get_update_time,
+                        verbose_name="Update" ,
+                    )
+
+
+    def get_object_id(self, datum):
+        return datum["uuid"]
+    def get_object_display(self, datum):
+        return datum["uuid"]
+
 class IndexView(tables.DataTableView):
-    table_class = HadoopGroupTable
+    table_class = HadoopIndexTable
     template_name = 'custom/hadoop/tables.html'
     def get_data(self):
         request = self.request
         container_name = getCustomContainerName(request)
         return getHadoopGroupList(request)
+
+class GroupView(tables.DataTableView):
+    table_class = HadoopGroupTable
+    template_name = 'custom/hadoop/tables.html'
+    def get_data(self):
+        request = self.request
+        data = getHadoopInstancesList(request,self.kwargs['group_id'])
+        return data
+
+
