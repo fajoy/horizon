@@ -37,6 +37,7 @@ def getObj(request,container_name,key):
         )
     return obj.data
 
+
 def setObj(request,container_name,key,obj):
         object_name = key
         object_file = obj
@@ -68,6 +69,7 @@ def getObjList(request, container_name, prefix=None, marker=None,
         if item.get("name", None):
             items.append(item)
     return items
+
 
 def getHadoopGroupList(request):
     container_name=getCustomContainerName(request)
@@ -106,6 +108,13 @@ def setHadoopGroup(request,data):
     key = ".hadoop/.%s" %(data["hadoop_group_id"])
     createContainer(request,container_name)
     setObj(request,container_name,key,json.dumps(data))
+
+def setHadoopJob(request,data):
+    container_name = getCustomContainerName(request)
+    key = ".hadoop/{group_id}/job/{id}".format(**data)
+    createContainer(request,container_name)
+    setObj(request,container_name,key,json.dumps(data))
+
 
 def getEc2Keys(request):
     tenant_id = request.user.tenant_id
@@ -401,6 +410,82 @@ class CreateView(workflows.WorkflowView):
 
 
 
+
+class JobAction(workflows.Action):
+    group_id = forms.Field(label=("group_id"),
+                     required=True,
+                     help_text="group id", 
+                     widget=forms.TextInput(
+                         attrs={'readonly': 'readonly'}),
+    )
+ 
+    name = forms.Field(label=("job_name"),
+                     required=False,
+                     help_text="Hadoop job name.", )
+    jar_location = forms.Field(label=("jar location"),
+                     required=False,
+                     help_text="jar location", )
+
+    jar_args = forms.Field(label=("jar arguments"),
+                     required=False,
+                     help_text="jar arguments", )
+
+
+    def handle(self, request, data):
+        return True
+
+    class Meta:
+        name = "Job"
+
+class JobStep(workflows.Step):
+    action_class = JobAction
+    depends_on = ("group_id",)
+    contributes = ("name","jar_location" ,"jar_args")
+
+class CreateHadoopJob(workflows.Workflow):
+    slug = "workflow"
+    name = "HadoopJobWorkFlow"
+    finalize_button_name = "Save"
+    success_message = 'success_message "{name}".'
+    failure_message = 'failure_message "%s".'
+    default_steps = (JobStep ,)
+
+    def get_link_url(self, datum=None):
+        return reverse(self.url, args=(self.table.kwargs["group_id"] ,))
+
+    def format_status_message(self, message):
+        name = self.context.get('job_name') or self.context.get('job_id')
+        return message % name
+
+    def get_success_url(self):
+        return reverse("horizon:custom:hadoop:group",
+                       args=(self.context.get("group_id"),))
+
+    def get_failure_url(self):
+        return reverse("horizon:custom:hadoop:group",
+                       args=(self.context.get("group_id"),))
+
+    def format_status_message(self, message):
+        return message.format(**self.context)
+
+    def handle(self, request, context):
+        import uuid
+        new_id = str(uuid.uuid1())
+        data = context
+        data.update({"id":new_id})
+        setHadoopJob(request,data)
+        return True
+
+
+class CreateJobView(workflows.WorkflowView):
+    workflow_class = CreateHadoopJob
+
+    def get_initial(self):
+        return {"group_id": self.kwargs['group_id'],
+                }
+
+
+
 class LaunchGroupLink(tables.LinkAction):
     name = "create"
     verbose_name = _("Create Hadoop Group ")
@@ -500,13 +585,21 @@ class  HadoopGroupUpdateRow(tables.Row):
                                 })
         return "%s?%s" % (table_url, params)
 
+class BtnCreateJob(tables.LinkAction):
+    name = "create_job"
+    verbose_name = "Create Job"
+    classes = ("ajax-modal", "btn-create")
+    url = "horizon:custom:hadoop:create_job"
 
+    def get_link_url(self, datum=None):
+        return reverse(self.url, args=(self.table.kwargs["group_id"] ,))
 
 class HadoopGroupTable(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
         table_actions = ()
         status_columns = ["ajax_state" , ]
+        table_actions = ( BtnCreateJob , )
         row_class = HadoopGroupUpdateRow
 
 
@@ -522,8 +615,8 @@ class HadoopGroupTable(tables.DataTable):
         return None
     ajax_state = tables.Column(getState ,
                         verbose_name="State",
-                         status=True,
-                         status_choices=AJAX_STATE,
+                        status=True,
+                        status_choices=AJAX_STATE,
                         hidden=True,
                 )
 
