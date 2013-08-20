@@ -35,13 +35,6 @@ def create_container(request,container_name=None):
         container_name = CUSTOM_CONTAINER_NAME.format(**request.__dict__)
     if not api.swift.swift_container_exists(request,container_name):
         api.swift.swift_create_container(request, container_name)
-
-def check_container(request,container_name=None):
-    if not container_name:
-        container_name = CUSTOM_CONTAINER_NAME.format(**request.__dict__)
-    if request.has_key(container_name+"_is_checked_container"):
-        create_container(request,container_name=container_name)
-        request[container_name+"_is_checked_container"] = True
     
 def get_obj_list(request,container_name=None, prefix=None, marker=None,limit=None,delimiter='/'):
     if not container_name:
@@ -231,6 +224,7 @@ def make_init_script_object(request,group_id,context):
 
 
     container_name = get_custom_container_name(request)
+    create_container(request)
     key = CUSTOM_HADOOP_PREFIX+"{group_id}/init_script.zip".format (**{"group_id":group_id ,})
     object_name = key
     object_file = temp_zip.read()
