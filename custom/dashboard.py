@@ -4,9 +4,10 @@ import horizon
 
 
 class Custom(horizon.Dashboard):
-    name = _("Custom")
+    name = _("NCTU")
     slug = "custom"
-    panels = ('ec2' , 'status' , 'hadoop' )   
-    default_panel = 'ec2'  
+    panels = ('ec2' , 'hadoop' )   
+    default_panel = 'ec2'
+    supports_tenants = True
 
 horizon.register(Custom)

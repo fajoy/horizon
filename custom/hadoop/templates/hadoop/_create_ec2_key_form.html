@@ -1,0 +1,23 @@
+{% extends "horizon/common/_modal_form.html" %}
+{% load i18n %}
+{% load url from future %}
+{% block form_id %}form{% endblock %}
+{% block form_action %}{{ request.get_full_path }}{% endblock %}
+
+{% block modal-header %}{% trans "Customization Script" %}{% endblock %}
+{% block modal-body %}
+<style>
+div.modal.hide.in { width:1000px;left: 40%;}
+div.static_page { width:1000px;}
+</style>
+    <h3>{% trans "Description" %}:</h3>
+    <p>Create EC2 Access and Secret Key. The key can  and access container data by S3 protocol.</p>
+    <fieldset>
+        {% include "horizon/common/_form_fields.html" %}
+    </fieldset>
+{% endblock %}
+
+{% block modal-footer %}
+  <input class="btn btn-primary pull-right" type="submit" value="{% trans "Save" %}" />
+  <a href="{% url 'horizon:custom:hadoop:index' %}" class="btn secondary cancel close">{% trans "Cancel" %}</a>
+{% endblock %}

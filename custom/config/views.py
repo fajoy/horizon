@@ -122,7 +122,6 @@ def getTemplateScriptRender(request,name):
     {{ user_id }}
     {{ container_name }}
     """
-    print c
     t = Template(script)
 
     return  t.render(Context(c))
