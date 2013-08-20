@@ -12,7 +12,6 @@ from horizon import messages
 from horizon import exceptions
 
 
-from horizon import workflows
 from horizon import forms
 from django.core.urlresolvers import reverse
 
@@ -177,27 +176,6 @@ class TerminateInstance(tables.BatchAction):
         delHost(request,obj_id)
 
 
-def getName(datum):
-    return datum.get("name","unknow")
-
-def getState(datum):
-    return datum.get("state","unknow")
-
-def get_update_time(datum):
-    return datum.get("update_time","unknow")
-
-def getEc2_id(datum):
-    return datum.get("id","unknow")
-
-def getAddress(datum):
-    ip = datum.get("ip_address","unknow")
-    _ip = datum.get("private_ip_address","unknow")
-    if ip ==_ip:
-        return ip
-    else:
-        return "%s , %s"%(_ip,ip)
-
-
 
 class UpdateRow(tables.Row):
     ajax = True
@@ -210,6 +188,28 @@ class UpdateRow(tables.Row):
 
 from openstack_dashboard.dashboards.project.instances.tables import AssociateIP,SimpleDisassociateIP
 class StatusTable(tables.DataTable):
+    def getName(datum):
+        return datum.get("name","unknow")
+    
+    def getState(datum):
+        return datum.get("state","unknow")
+    
+    def get_update_time(datum):
+        return datum.get("update_time","unknow")
+    
+    def getEc2_id(datum):
+        return datum.get("id","unknow")
+    
+    def getAddress(datum):
+        ip = datum.get("ip_address","unknow")
+        _ip = datum.get("private_ip_address","unknow")
+        if ip ==_ip:
+            return ip
+        else:
+            return "%s , %s"%(_ip,ip)
+
+
+
     STATE_CHOICES = (
         ("running", True),
     )

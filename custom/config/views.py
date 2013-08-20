@@ -15,8 +15,12 @@ import logging
 log = logging.getLogger("Custom")
 
 CUSTOM_CONF_PREFIX= ".config/" 
+
+from django.conf import settings
+
+CUSTOM_CONTAINER_NAME = getattr(settings,"CUSTOM_CONTAINER_NAME" , "custom-{user.tenant_id}" )
 def getCustomContainerName(request):
-    return "custom_"+request.user.tenant_id
+    return CUSTOM_CONTAINER_NAME.format(**request.__dict__)
 
 def createContainer(request,container_name):
     containers, _more = api.swift.swift_get_containers(request,marker=None)
