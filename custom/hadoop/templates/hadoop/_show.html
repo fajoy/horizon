@@ -1,0 +1,13 @@
+{% extends "horizon/common/_modal.html" %}
+{% load i18n %}
+{% load url from future %}
+{% block modal-header %}{{ name }}{% endblock %}
+{% block modal-body %}
+<pre class="logs">
+{{ text }}
+</pre>
+{% endblock %}
+{% block modal-footer %}
+{% endblock %}
+
+

@@ -1,0 +1,98 @@
+Content-Type: multipart/mixed; boundary="===============4865247342894093668=="
+MIME-Version: 1.0
+
+--===============4865247342894093668==
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="a00_init"
+
+#cloud-config
+#ref https://cloudinit.readthedocs.org/en/latest/topics/examples.html
+apt_sources:
+ - source: "ppa:webupd8team/java"
+
+apt_sources:
+ - source: "ppa:hadoop-ubuntu/dev"
+
+apt_mirror: http://ubuntu.cs.nctu.edu.tw/ubuntu/
+repo_update: true
+
+packages:
+ - python-pip
+ - zip
+ - git
+
+{% if admin_pass %}
+chpasswd:
+  list: |
+    root:{{admin_pass}}
+  expire: False
+{% endif %}
+ssh_pwauth: True
+
+--===============4865247342894093668==
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="a01_rc.sh"
+
+#!/bin/bash
+#==output to console==
+exec 1>/dev/console
+exec 2>/dev/console
+source /etc/profile
+echo "====BEGIN rc.sh======="
+ifconfig eth0 mtu 1454
+tee /etc/rc.local <<EOF
+exec 1>/dev/console
+exec 2>/dev/console
+ifconfig eth0 mtu 1454
+exit 0
+EOF
+echo "====Install boto======="
+pip install boto --upgrade
+echo "====Install hadoop setting"
+ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+tee /etc/timezone <<<Asia/Taipei
+tee -a /etc/profile.d/custom_hadoop_env.sh <<EOF
+#!/bin/sh
+export OS_TENANT_ID={{ tenant_id }}
+export HADOOP_GROUP_ID={{ hadoop_group_id }}
+export HADOOP_MASTER_ID={{ hadoop_master_id }}
+export HADOOP_MASTER_NAME={{ hadoop_master_name }}
+export EC2_ACCESS_KEY={{ ec2_access_key }}
+export EC2_SECRET_KEY={{ ec2_secret_key }}
+EOF
+source /etc/profile
+tee /root/.boto <<EOF
+[Credentials]
+aws_access_key_id = {{ ec2_access_key }}
+aws_secret_access_key = {{ ec2_secret_key }}
+
+[s3]
+host = {{ s3_host }}
+calling_format = boto.s3.connection.OrdinaryCallingFormat
+
+[Boto]
+is_secure = False
+EOF
+cd /tmp
+tee /tmp/jets3t.properties <<EOF
+s3service.s3-endpoint={{ s3_host }}
+s3service.https-only=false
+s3service.s3-endpoint-http-port=80
+s3service.s3-endpoint-https-port=443
+s3service.disable-dns-buckets=true
+EOF
+zip -r /usr/lib/hadoop/hadoop-core-*.jar . -i jets3t.properties
+echo "====make script======="
+hadoop fs -get s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@custom-$OS_TENANT_ID/.hadoop/$HADOOP_GROUP_ID/init_script.zip /root/init_script.zip
+cd /root
+unzip init_script.zip
+cp files/jets3t-0.6.1.jar /usr/share/hadoop/lib/jets3t-0.6.1.jar
+source /etc/profile
+source /root/.eucarc
+python files/init_script.py
+python files/check_hadoop_deamon.py
+echo "=====END rc.sh========"
