@@ -51,7 +51,7 @@
 
     ./run_tests.sh --runserver 0.0.0.0:8000
 
-Custom Hadoop Ubuntu Cloud QCOW2 Image 製作 ::
+Custom Hadoop Ubuntu Cloud QCOW2 Image 製作 
 ------------
 
 * 先利用一台Ubuntu Instance啟動後登入 ::
