@@ -21,7 +21,6 @@ repo_update: true
 packages:
  - python-pip
  - zip
- - git
 
 {% if admin_pass %}
 chpasswd:
