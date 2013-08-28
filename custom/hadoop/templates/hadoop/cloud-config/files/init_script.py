@@ -322,6 +322,7 @@ if __name__ == "__main__":
     meta.update(get_obj_meta_data(meta))
     meta.update(get_ec2_meta_data())
     instance_id=meta["uuid"]
+    meta["cpu_count"]=multiprocessing.cpu_count()
     meta["map_count"]=multiprocessing.cpu_count()*2
     meta["reduce_count"]=multiprocessing.cpu_count()
     update_obj_meta_data(meta)
