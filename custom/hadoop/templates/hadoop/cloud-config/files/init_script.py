@@ -275,7 +275,9 @@ def install_hadoop_conf(meta):
 
     master_meta=get_obj_meta_data(dict(HADOOP_GROUP_ID=meta["HADOOP_GROUP_ID"],
                                     uuid=meta["HADOOP_MASTER_ID"]))
-    master_meta["cpu_count"]=meta["cpu_count"]
+    master_meta["cpu_count"]=multiprocessing.cpu_count()
+    master_meta["map_count"]=multiprocessing.cpu_count()*2
+    master_meta["reduce_count"]=multiprocessing.cpu_count()
     conf=render_template(conf_template,master_meta)
     for fn in conf:
         with open(fn,'w') as fd:
