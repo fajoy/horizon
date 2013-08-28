@@ -264,11 +264,11 @@ def install_hadoop_conf(meta):
     </property>
     <property>
         <name>mapred.tasktracker.map.tasks.maximum</name>
-        <value>{cpu_count}</value>
+        <value>{map_count}</value>
     </property>
     <property>
       <name>mapred.tasktracker.reduce.tasks.maximum</name>
-      <value>{cpu_count}</value>
+      <value>{reduce_count}</value>
     </property>
 </configuration>
 """}
@@ -322,7 +322,8 @@ if __name__ == "__main__":
     meta.update(get_obj_meta_data(meta))
     meta.update(get_ec2_meta_data())
     instance_id=meta["uuid"]
-    meta["cpu_count"]=multiprocessing.cpu_count()
+    meta["map_count"]=multiprocessing.cpu_count()*2
+    meta["reduce_count"]=multiprocessing.cpu_count()
     update_obj_meta_data(meta)
     update_file_meta_data(meta)
     update_hostname(meta)
