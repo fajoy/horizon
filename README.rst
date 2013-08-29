@@ -1,12 +1,26 @@
 =============================
 開發筆記
 =============================
+* Ubuntu 12.04套件需求 ::
+
+    apt-get install git gcc python-virtualenv  python-dev nodejs
+
+* 下載安裝 ::
+
+    git clone https://github.com/fajoy/horizon.git    
+    cd horizon
+    cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
+    ./run_tests.sh
+
+目前因有修改swift api 的部分,因此會有test error出現,但不影響執行運作.
 
 * 加入模組
 
-編輯 openstack_dashboard/local/local_settings.py
+編輯 openstack_dashboard/local/local_settings.py ::
 
-
+    CUSTOM_HADOOP_IMAGE_LIST=["9622d821-fe51-454d-9ed2-310ab53ec30a" ,]
+    CUSTOM_HADOOP_S3_HOST = "s3.nctu.edu.tw"
+    OPENSTACK_HOST = "openstack-grizzly.it.nctu.edu.tw"
     INSTALLED_APPS = (
         'openstack_dashboard',
         'django.contrib.contenttypes',
@@ -23,12 +37,80 @@
         'openstack_auth',
         'custom',
     )
+    
+* 不需DEBUG 可修改為 ::
+
+    DEBUG = False
+    DEBUG404 = False
+    TEMPLATE_DEBUG = False
+    PROD = True
+    USE_SSL = False
+
+
+* 啟動測試 ::
+
+    ./run_tests.sh --runserver 0.0.0.0:8000
+
+Custom Hadoop Ubuntu Cloud QCOW2 Image 製作 
+------------
+
+* 先利用一台Ubuntu Instance啟動後登入 ::
+
+    #安裝所需套件
+    sudo -i 
+    apt-get install qemu-utils 
+
+    #可到 http://cloud-images.ubuntu.com/releases/ 上取得所需修改版本的image 
+    wget http://cloud-images.ubuntu.com/releases/12.04.2/release/ubuntu-12.04.2-server-cloudimg-amd64-disk1.img
+
+    #載入nbd kernel module
+    modprobe nbd
+
+    #連接image檔到nbd裝置上
+    qemu-nbd -c /dev/nbd0 `readlink -f ./ubuntu-12.04.2-server-cloudimg-amd64-disk1.img`
+
+    #mount nbd裝置
+    mount  /dev/nbd0p1 /mnt
+    mount -o bind /dev /mnt/dev 
+    mount -t proc none /mnt/proc
+    mount -o bind /sys /mnt/sys
+    mount -o bind /tmp /mnt/tmp
+
+    #切換root到image上
+    chroot /mnt /bin/bash
+
+    #設定name     server
+    mv /etc/resolv.conf /etc/resolv.conf.bak
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+
+    #開始安裝java與hadoop套件
+    add-apt-repository  ppa:webupd8team/java
+    add-apt-repository ppa:hadoop-ubuntu/stable
+    apt-get update
+    apt-get install oracle-java6-installer oracle-java6-set-default -y
+    apt-get install hadoop -y
+
+    #清除cache
+    rm -r /var/cache/oracle-jdk6-installer
+    rm -r /var/cache/apt/archives/*.deb
+
+    #還原nameserver 設定
+    rm /etc/resolv.conf
+    mv /etc/resolv.conf.bak /etc/resolv.conf
+    #返回原本root
+    exit
+
+    #umount image
+    umount  /mnt/
+    qemu-nbd -d /dev/nbd0
+
+    #之後就可將image上傳使用
+
+
 
 參考文件
 
   * http://docs.openstack.org/developer/horizon/topics/tutorial.html
-
-
 
 
 Horizon (OpenStack Dashboard)
