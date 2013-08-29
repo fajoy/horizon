@@ -365,6 +365,15 @@ def delete_group(request,group_id):
     for obj in get_obj_list(request,prefix=prefix,delimiter=None):
         delete_obj(request,obj["name"])
 
+def create_bash(request,context):
+    new_id = str(uuid.uuid1())
+    context.update({"job_id":new_id 
+                    ,"job_type":"bash"})
+
+    context["script"]=context["script"].replace("\r","")
+    save_job_obj(request,context)
+    return context
+
 def create_jar(request,context):
     new_id = str(uuid.uuid1())
     context.update({"job_id":new_id 

@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 from django.core.urlresolvers import resolve
 from django.utils.html import escape
 from django import shortcuts
+from django.http import QueryDict
 
 from horizon import exceptions
 from horizon import tables
@@ -48,6 +49,83 @@ class JobStep(workflows.Step):
         context.update(data)
         return context
 
+class BashAction(workflows.Action):
+    class Meta:
+        name = "Bash"
+
+    script =  forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 500px;' }),
+                            label=_("Bash Script"),
+                            required=True,
+                            )
+    def __init__(self, request, context, *args, **kwargs):
+        super(BashAction, self).__init__(request, context, *args, **kwargs)
+        self.fields["script"].initial=context.get("script","""echo `date '+%Y/%m/%d %H:%M:%S'` Start.
+#Script Code
+
+echo `date '+%Y/%m/%d %H:%M:%S'` End.""")
+
+    def handle(self, request, data):
+        return True
+
+    def get_help_text(self, extra_context=None):
+        return """
+"""
+ 
+
+class BashStep(workflows.Step):
+    slug="bash"
+    action_class = BashAction
+    contributes = ("script" , )
+
+    def contribute(self, data, context):
+        context.update(data)
+        return context
+
+
+class CreateBashWorkflow(workflows.Workflow):
+    slug = "CreateBashWorkflow"
+    name = "Create Bash Job"
+    finalize_button_name = "Save"
+    success_message = 'success_message "{job_name}".'
+    failure_message = 'failure_message "{job_name}".'
+    default_steps = (JobStep ,
+                     BashStep,)
+
+    def get_link_url(self, datum=None):
+        url="horzion:custom:hadoop:job:index"
+        return reverse(url, args=(self.workflow.kwargs["hadoop_group_id"] ,))
+
+    def format_status_message(self, message):
+        name = self.context.get('job_name') 
+        return message % name
+
+    def get_success_url(self):
+        return reverse("horizon:custom:hadoop:job:index",
+                       args=(self.context.get("hadoop_group_id"),))
+
+    def get_failure_url(self):
+        return reverse("horizon:custom:hadoop:job:index",
+                       args=(self.context.get("hadoop_group_id"),))
+
+    def format_status_message(self, message):
+        return message.format(**self.context)
+
+    def handle(self, request, context):
+        return hadoop.create_bash(request,context)
+
+class CreateBashView(workflows.WorkflowView):
+    workflow_class = CreateBashWorkflow
+
+    def get_initial(self):
+        initial=super(CreateBashView, self).get_initial()
+        if self.kwargs.has_key('group_id'):
+            initial.update({'hadoop_group_id': self.kwargs['group_id'],})
+        job_id=self.request.GET.get("job_id",None)
+        if job_id:
+            datum = hadoop.get_job_obj(self.request,self.kwargs["group_id"],job_id)
+            initial.update(datum)
+        return initial
+
 class JarArgsAction(workflows.Action):
     class Meta:
         name = "JarArgs"
@@ -77,7 +155,7 @@ s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@[bucket]/[input_path]
 s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@[bucket]/[output_path]
 </pre>
 """
-        
+
 class JarArgsStep(workflows.Step):
     slug="job_args"
     action_class = JarArgsAction
@@ -87,6 +165,51 @@ class JarArgsStep(workflows.Step):
         context.update(data)
         return context
 
+
+class CreateJarWorkflow(workflows.Workflow):
+    slug = "CreateJarWorkflow"
+    name = "Create Jar Job"
+    finalize_button_name = "Save"
+    success_message = 'success_message "{job_name}".'
+    failure_message = 'failure_message "{job_name}".'
+    default_steps = (JobStep ,
+                     JarArgsStep,)
+
+    def get_link_url(self, datum=None):
+        url="horzion:custom:hadoop:job:index"
+        return reverse(url, args=(self.workflow.kwargs["hadoop_group_id"] ,))
+
+    def format_status_message(self, message):
+        name = self.context.get('job_name') 
+        return message % name
+
+    def get_success_url(self):
+        return reverse("horizon:custom:hadoop:job:index",
+                       args=(self.context.get("hadoop_group_id"),))
+
+    def get_failure_url(self):
+        return reverse("horizon:custom:hadoop:job:index",
+                       args=(self.context.get("hadoop_group_id"),))
+
+    def format_status_message(self, message):
+        return message.format(**self.context)
+
+    def handle(self, request, context):
+        return hadoop.create_jar(request,context)
+
+class CreateJarView(workflows.WorkflowView):
+    workflow_class = CreateJarWorkflow
+
+    def get_initial(self):
+        initial=super(CreateJarView, self).get_initial()
+        if self.kwargs.has_key('group_id'):
+            initial.update({'hadoop_group_id': self.kwargs['group_id'],})
+        job_id=self.request.GET.get("job_id",None)
+        if job_id:
+            datum = hadoop.get_job_obj(self.request,self.kwargs["group_id"],job_id)
+            initial.update(datum)
+        return initial
+    
 class StreamingArgsAction(workflows.Action):
     class Meta:
         name = "Streaming"
@@ -140,7 +263,6 @@ Extea Arguments (Option):
 -numReduceTasks [num]  ...etc.
 </pre>
 """
-
         
 class StreamingArgsStep(workflows.Step):
     slug="Streaming"
@@ -197,50 +319,12 @@ class CreateStreamingView(workflows.WorkflowView):
         initial=super(CreateStreamingView, self).get_initial()
         if self.kwargs.has_key('group_id'):
             initial.update({'hadoop_group_id': self.kwargs['group_id'],})
+        job_id=self.request.GET.get("job_id",None)
+        if job_id:
+            datum = hadoop.get_job_obj(self.request,self.kwargs["group_id"],job_id)
+            initial.update(datum)
         return initial
  
-
-class CreateJarWorkflow(workflows.Workflow):
-    slug = "CreateJarWorkflow"
-    name = "Create Jar Job"
-    finalize_button_name = "Save"
-    success_message = 'success_message "{job_name}".'
-    failure_message = 'failure_message "{job_name}".'
-    default_steps = (JobStep ,
-                     JarArgsStep,)
-
-    def get_link_url(self, datum=None):
-        url="horzion:custom:hadoop:job:index"
-        return reverse(url, args=(self.workflow.kwargs["hadoop_group_id"] ,))
-
-    def format_status_message(self, message):
-        name = self.context.get('job_name') 
-        return message % name
-
-    def get_success_url(self):
-        return reverse("horizon:custom:hadoop:job:index",
-                       args=(self.context.get("hadoop_group_id"),))
-
-    def get_failure_url(self):
-        return reverse("horizon:custom:hadoop:job:index",
-                       args=(self.context.get("hadoop_group_id"),))
-
-    def format_status_message(self, message):
-        return message.format(**self.context)
-
-    def handle(self, request, context):
-        return hadoop.create_jar(request,context)
-
-class CreateJarView(workflows.WorkflowView):
-    workflow_class = CreateJarWorkflow
-
-    def get_initial(self):
-        initial=super(CreateJarView, self).get_initial()
-        if self.kwargs.has_key('group_id'):
-            initial.update({'hadoop_group_id': self.kwargs['group_id'],})
-        return initial
-    
-
 class UpdateRow(tables.Row):
     ajax = True
     def get_data(self, request,instance_id):
@@ -255,8 +339,6 @@ class UpdateRow(tables.Row):
         datum["request"]=request
         return datum
 
-from django.http import HttpResponseRedirect
-
 class GroupListAction(tables.LinkAction):
     name = "group_list"
     verbose_name = "Instance List"
@@ -265,6 +347,14 @@ class GroupListAction(tables.LinkAction):
     def get_link_url(self, datum=None):
         return reverse('horizon:custom:hadoop:group:index', args=(self.table.kwargs["group_id"] , ))
 
+class CreateBashAction(tables.LinkAction):
+    name = "create_bash"
+    verbose_name = "Create Bash Job"
+    classes = ("ajax-modal", "btn-create")
+
+    def get_link_url(self, datum=None):
+        url = "horizon:custom:hadoop:job:create_bash"
+        return reverse(url, args=(self.table.kwargs["group_id"] ,))
 
 class CreateJarAction(tables.LinkAction):
     name = "create_jar"
@@ -286,7 +376,6 @@ class CreateStreamingAction(tables.LinkAction):
             return reverse(url, args=(self.table.kwargs["group_id"] ,))
         url = "horizon:custom:hadoop:job:create_streaming"
         return reverse(url, args=())
-
 
 class DeleteJobAction(tables.BatchAction):
     name = "Delete Job"
@@ -329,6 +418,14 @@ class UpdateRow(tables.Row):
         path='job/' +self.table.kwargs["group_id"]+"/"+id+"/"+"log/stderr"
         link = reverse(url, args=(path ,))
         self.table.set_column_link("stderr",link)
+        job_type=datum.get("job_type",None)
+        if job_type:
+            datum["clone"]="clone"
+            url="horizon:custom:hadoop:job:create_"+job_type
+            qs=QueryDict('').copy()
+            qs.update({"job_id":id})
+            link = "%s?%s" %(reverse(url, args=(self.table.kwargs["group_id"] , )),qs.urlencode())
+            self.table.set_column_link("clone",link)
 
         return datum
 
@@ -336,7 +433,7 @@ class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Job"
         status_columns = ["ajax_state" , ]
-        table_actions = ( GroupListAction ,CreateJarAction ,CreateStreamingAction, DeleteJobAction)
+        table_actions = ( GroupListAction ,CreateBashAction ,CreateJarAction ,CreateStreamingAction, DeleteJobAction)
         row_class = UpdateRow 
     def get_name(datum):
         return datum.get("name",None) or datum.get("job_name",None) 
@@ -356,7 +453,6 @@ class Table(tables.DataTable):
                         verbose_name=_("Job Type"),
                         link_classes= ( "ajax-modal","btn")
                         )
-
 
     def get_json(datum):
         return "json"
@@ -380,12 +476,21 @@ class Table(tables.DataTable):
                         link_classes= ( "ajax-modal", "btn" )
                         )
 
+    def get_clone(datum):
+        return datum.get("clone",None)
+    clone = tables.Column(get_clone,
+                        verbose_name=_("Clone"),
+                        link_classes= ( "ajax-modal","btn")
+                        )
+
+
+
     def get_ajax_state(datum):
         if datum.has_key("request"):
             return "true"
         return None
     ajax_state = tables.Column(get_ajax_state ,
-                        verbose_name="state",
+                        verbose_name="ajax_state",
                         status=True,
                         hidden=True,
                 )

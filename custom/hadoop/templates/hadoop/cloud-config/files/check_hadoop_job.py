@@ -9,6 +9,30 @@ import json
 from time import sleep
 
 
+def handle_bash(obj):
+    dir_path = "/root/job/{id}/log".format(**obj)
+    os.makedirs(dir_path)
+    dir_path = "/root/job/{id}/work".format(**obj)
+    os.makedirs(dir_path)
+    os.chdir(dir_path)
+    with open("/root/job/{id}/obj".format(**obj),"w") as fd:
+        fd.write(json.dumps(obj))
+    script_path= "/root/job/{id}/run.sh".format(**obj)
+    with open(script_path,'a+') as sh:
+        cmd = """#!/bin/bash
+{script}
+""".format(**obj)
+        sh.write(cmd)
+    stdout=open("/root/job/{id}/log/stdout".format(**obj),"a+")
+    stderr=open("/root/job/{id}/log/stderr".format(**obj),"a+")
+    p=subprocess.Popen("bash "+script_path,stdout=stdout,stderr=stderr, shell=True ,env=os.environ)
+    log_prefix=".hadoop/job/{group_id}/{id}/log".format(**obj)
+    log_dir = "/root/job/{id}/log".format(**obj)
+    while p.poll()==None: #subprocess is running.
+        sleep(3)
+        api.update_obj_from_dir(log_prefix,log_dir)
+    api.update_obj_from_dir(log_prefix,log_dir)
+
 def handle_jar(obj):
     dir_path = "/root/job/{id}/log".format(**obj)
     os.makedirs(dir_path)
@@ -85,6 +109,11 @@ hadoop job -history  s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@{output_location}
     api.update_obj_from_dir(log_prefix,log_dir)
 
 def handle_job(obj):
+    if obj["job_type"]=="bash":
+        handle_bash(obj)
+        return
+
+
     if obj["job_type"]=="jar":
         handle_jar(obj)
         return

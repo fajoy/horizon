@@ -1,6 +1,11 @@
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import resolve
+from django.core import urlresolvers
+from django import template
+from django.utils.http import urlencode
+from django import shortcuts
+
 
 from horizon.utils import validators
 from horizon import tables
@@ -12,7 +17,8 @@ from horizon import forms
 from openstack_dashboard.dashboards.project.instances.workflows import SetInstanceDetailsAction,KEYPAIR_IMPORT_URL
 from openstack_dashboard.dashboards.project.instances.workflows import LaunchInstance, SetInstanceDetails, SetNetwork
 from openstack_dashboard.dashboards.project.images_and_snapshots.utils import get_available_images
-from openstack_dashboard.dashboards.project.instances.tables import  POWER_STATES
+from openstack_dashboard.dashboards.project.instances.tables import  POWER_STATES,TerminateInstance,SimpleAssociateIP, AssociateIP,SimpleDisassociateIP
+from openstack_dashboard.dashboards.project.access_and_security.floating_ips.workflows import IPAssociationWorkflow
 from openstack_dashboard.usage import quotas
 from openstack_dashboard import api
 
@@ -214,7 +220,6 @@ class CreateSlaveAction(tables.LinkAction):
     verbose_name = "Create Slave"
     classes = ("ajax-modal", "btn-create")
     url = "horizon:custom:hadoop:group:create_slave"
-
     def get_link_url(self, datum=None):
         return reverse(self.url, args=(self.table.kwargs["group_id"] ,))
 
@@ -244,6 +249,7 @@ class UpdateRow(tables.Row):
         datum = hadoop.get_instance_meta(request,kwargs['group_id'],instance_id)
         try:
             instance = api.nova.server_get(request, instance_id)
+            datum['instance'] = instance
             datum['state'] = POWER_STATES.get(getattr(instance, "OS-EXT-STS:power_state", 0), '')
         except:
             self.table.disable_column_link()
@@ -253,65 +259,108 @@ class UpdateRow(tables.Row):
         return datum
 
 
+class _AssociateIP(AssociateIP):
+    def get_link_url(self, datum):
+        func, args, kwargs = resolve(self.table.request.META["PATH_INFO"])
+
+        base_url = urlresolvers.reverse(self.url)
+        next = urlresolvers.reverse("horizon:custom:hadoop:group:index",
+                       args=(kwargs["group_id"],))
+
+        params = {"instance_id": self.table.get_object_id(datum),
+                  IPAssociationWorkflow.redirect_param_name: next}
+        params = urlencode(params)
+        return "?".join([base_url, params])
+
+class _SimpleDisassociateIP(SimpleDisassociateIP):
+    def single(self, table, request, instance_id):
+        try:
+            target_id = api.network.floating_ip_target_get_by_instance(
+                request, instance_id).split('_')[0]
+
+            fips = [fip for fip in api.network.tenant_floating_ip_list(request)
+                    if fip.port_id == target_id]
+            if fips:
+                fip = fips.pop()
+                api.network.floating_ip_disassociate(request,
+                                                     fip.id, target_id)
+                messages.success(request,
+                                 _("Successfully disassociated "
+                                   "floating IP: %s") % fip.ip)
+            else:
+                messages.info(request, _("No floating IPs to disassociate."))
+        except:
+            exceptions.handle(request,
+                              _("Unable to disassociate floating IP."))
+        func, args, kwargs = resolve(self.table.request.META["PATH_INFO"])
+        url = urlresolvers.reverse("horizon:custom:hadoop:group:index",
+                       args=(kwargs["group_id"],))
+        return shortcuts.redirect(url)
+
 
 class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
         table_actions = ()
         status_columns = ["ajax_state" , ]
-        table_actions = ( JobListAction, CreateSlaveAction, )
+        table_actions = ( JobListAction, CreateSlaveAction, TerminateInstance )
+        row_actions = ( _AssociateIP,_SimpleDisassociateIP, TerminateInstance)
         row_class = UpdateRow
 
-
-    uuid = tables.Column("uuid",
-                         verbose_name=_("uuid"))
-
-    def getState(datum):
+    def get_ajax_state(datum):
         if datum.has_key("request"):
             return "true"
         return None
-    ajax_state = tables.Column(getState ,
-                        verbose_name="State",
+    ajax_state = tables.Column(get_ajax_state,
+                        verbose_name="ajax_state",
                         status=True,
                         hidden=True,
                 )
 
-
     def get_name(datum):
-        if datum.get("state",None):
-            return datum.get("name",None)
-        return None
+        return  datum.get("name",None) or datum.get("uuid",None)
     
     name = tables.Column(get_name,
                          link=("horizon:custom:hadoop:detail"),
                          verbose_name=_("Name"))
-    def getState(datum):
+    def get_state(datum):
         return datum.get("state",None)
-    
-    def getAddress(datum):
-        ip = datum.get("ip_address","unknow")
-        _ip = datum.get("private_ip_address","unknow")
-        if ip ==_ip:
-            return ip
-        else:
-            return "%s , %s"%(_ip,ip)
+
+
+    def get_ips(datum):
+        if datum.get('instance',None):
+            template_name = 'project/instances/_instance_ips.html'
+            return template.loader.render_to_string(template_name, datum)
+        return '-'
+
+    ip = tables.Column(get_ips,
+                       verbose_name=_("IP Address"),
+                       attrs={'data-type': "ip"})
+
+    def get_init(datum):
+        if not datum.get("instance",None):
+            return  "-"
+        if datum.get("private_ip_address",None):
+            return  "ok"
+        return  "installing"
+        
 
     def disable_column_link(self):
         cols = self.columns
         for key in cols:
             cols[key].link=None
 
-    state = tables.Column(getState ,
+    state = tables.Column(get_state ,
                         verbose_name="State",
                 )
-    address = tables.Column(getAddress ,
-                        verbose_name="Address",
+    init = tables.Column(get_init ,
+                        verbose_name="Init",
                 )
 
     def get_object_id(self, datum):
         return datum["uuid"]
     def get_object_display(self, datum):
-        return datum["uuid"]
+        return  datum.get("name",None) or datum.get("uuid",None)
 
 
 class GroupView(tables.DataTableView):
