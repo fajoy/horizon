@@ -1,7 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
+from django.utils.text import normalize_newlines
 from django.core.urlresolvers import reverse
 from django import shortcuts
-from django.utils.text import normalize_newlines
 from horizon import tables
 from horizon import messages
 from horizon import exceptions

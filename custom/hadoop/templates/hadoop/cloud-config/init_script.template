@@ -1,11 +1,11 @@
-Content-Type: multipart/mixed; boundary="===============4865247342894093668=="
+Content-Type: multipart/mixed; boundary="=={{ hadoop_group_id }}=="
 MIME-Version: 1.0
 
---===============4865247342894093668==
+--=={{ hadoop_group_id }}==
 Content-Type: text/cloud-config; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="a00_init"
+Content-Disposition: attachment; filename="0_cloud-init"
 
 #cloud-config
 #ref https://cloudinit.readthedocs.org/en/latest/topics/examples.html
@@ -29,12 +29,11 @@ chpasswd:
   expire: False
 {% endif %}
 ssh_pwauth: True
-
---===============4865247342894093668==
+--=={{ hadoop_group_id }}==
 Content-Type: text/x-shellscript; charset="us-ascii"
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="a01_rc.sh"
+Content-Disposition: attachment; filename="1init_script.sh"
 
 #!/bin/bash
 #==output to console==
@@ -44,12 +43,13 @@ source /etc/profile
 echo "====BEGIN rc.sh======="
 ifconfig eth0 mtu 1454
 tee /etc/rc.local <<EOF
+#!/bin/bash
 exec 1>/dev/console
 exec 2>/dev/console
 ifconfig eth0 mtu 1454
 exit 0
 EOF
-echo "====Install boto======="
+echo "====Install boto======"
 pip install boto --upgrade
 echo "====Install hadoop setting"
 ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
@@ -95,3 +95,12 @@ source /root/.eucarc
 python files/init_script.py
 python files/check_hadoop_deamon.py
 echo "=====END rc.sh========"
+{% if user_script %}
+--=={{ hadoop_group_id }}==
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="2user_data_script.sh"
+
+{{ user_script }}
+{% endif %}

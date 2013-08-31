@@ -1,7 +1,8 @@
 from django.utils.translation import ugettext_lazy as _
+from django.utils.text import normalize_newlines
+from django.utils.html import escape
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import resolve
-from django.utils.html import escape
 from django import shortcuts
 from django.http import QueryDict
 
