@@ -369,8 +369,6 @@ def create_bash(request,context):
     new_id = str(uuid.uuid1())
     context.update({"job_id":new_id 
                     ,"job_type":"bash"})
-
-    context["script"]=context["script"].replace("\r","")
     save_job_obj(request,context)
     return context
 
@@ -378,7 +376,6 @@ def create_jar(request,context):
     new_id = str(uuid.uuid1())
     context.update({"job_id":new_id 
                     ,"job_type":"jar"})
-    context["jar_args"]=" ".join(context["jar_args"].split())
     save_job_obj(request,context)
     return context
 
@@ -386,6 +383,5 @@ def create_streaming(request,context):
     new_id = str(uuid.uuid1())
     context.update({"job_id":new_id 
                     ,"job_type":"streaming"})
-    context["extea_args"]=" ".join(context["extea_args"].split())
     save_job_obj(request,context)
     return context

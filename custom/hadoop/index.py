@@ -1,6 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 from django.core.urlresolvers import reverse
 from django import shortcuts
+from django.utils.text import normalize_newlines
 from horizon import tables
 from horizon import messages
 from horizon import exceptions
@@ -161,7 +162,6 @@ class SetAccessControlsAction(workflows.Action):
             _list = (("", _("No EC2 key available.")),)
         return _list
 
-
     def populate_keypair_choices(self, request, context):
         try:
             keypairs = api.nova.keypair_list(request)
@@ -197,7 +197,6 @@ class SetAccessControlsAction(workflows.Action):
                 raise forms.ValidationError(_('Passwords do not match.'))
         return cleaned_data
 
-
 class SetHadoopMasterDetails(workflows.Step):
     action_class = SetHadoopMasterDetailsAction
     contributes = ( "source_id", "name", "flavor")
@@ -205,7 +204,6 @@ class SetHadoopMasterDetails(workflows.Step):
         name = _("Details")
         help_text_template = ("project/instances/"
                               "_launch_details_help.html")
-
 
 class SetAccessControls(workflows.Step):
     action_class = SetAccessControlsAction
@@ -225,6 +223,47 @@ class SetAccessControls(workflows.Step):
             context['confirm_admin_pass'] = data.get("confirm_admin_pass", "")
         return context
 
+
+class UserScriptAction(workflows.Action):
+    class Meta:
+        name = "User-Data Scripts"
+
+    user_script =  forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 200px;' }),
+                            label=_("User-Data Scripts"),
+                            required=False,
+                            )
+    def __init__(self, request, context, *args, **kwargs):
+        super(UserScriptAction, self).__init__(request, context, *args, **kwargs)
+        self.fields["user_script"].initial=context.get("user_script","""""")
+
+    def handle(self, request, data):
+        return True
+
+    def get_help_text(self, extra_context=None):
+        return """
+As popularized by alestic.com, user-data scripts are a convenient way to do something on first boot of a launched instance. This input format is accepted to cloud-init and handled as you would expect. The script will be invoked at an "rc.local" like point in the boot sequence.
+<br />
+<br />
+Example:
+<pre>
+#!/bin/bash
+apt-get install -y git
+</pre>
+
+You want more custom modify, you can download Horizon <a href="https://github.com/fajoy/horizon">Source Code</a>,
+instal and modify init_script.
+"""
+
+class UserScriptStep(workflows.Step):
+    slug="user_script"
+    action_class = UserScriptAction
+    contributes = ("user_script" , )
+    def contribute(self, data, context):
+        context.update(data)
+        return context
+
+
+
 class CreateMasterWorkflow(workflows.Workflow):
     slug = "create_group"
     name = _("Create Hadoop Master")
@@ -236,6 +275,7 @@ class CreateMasterWorkflow(workflows.Workflow):
                      SetHadoopMasterDetails,
                      SetAccessControls,
                      SetNetwork,
+                     UserScriptStep,
                     )
 
     def format_status_message(self, message):
@@ -243,6 +283,7 @@ class CreateMasterWorkflow(workflows.Workflow):
         return message % ( name ,)
 
     def handle(self, request, context):
+        context["user_script"]=normalize_newlines(context["user_script"])
         meta=hadoop.create_master(request,context)
         if meta==None:
             return False
@@ -268,15 +309,15 @@ class CreateMasterAction(tables.LinkAction):
     url = "horizon:custom:hadoop:create"
     classes = ("ajax-modal", "btn-create")
 
-class TerminateGroupAction(tables.BatchAction):
-    name = "Terminate Group"
-    action_present = _("Terminate")
+class DeleteGroupAction(tables.BatchAction):
+    name = "Delete Group"
+    action_present = _("Delete")
     action_past = _("Delete of")
     data_type_singular = _("Group")
     data_type_plural = _("Group")
     classes = ('btn-danger', 'btn-terminate')
     def __init__(self):
-        super(TerminateGroupAction, self).__init__()
+        super(DeleteGroupAction, self).__init__()
 
     def allowed(self, request, datum=None):
         return True
@@ -309,8 +350,8 @@ class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
         status_columns = ["ajax_state" , ]
-        table_actions = (CreateMasterAction ,  TerminateGroupAction)
-        row_actions = (TerminateGroupAction ,)
+        table_actions = (CreateMasterAction ,  DeleteGroupAction)
+        row_actions = (DeleteGroupAction ,)
         row_class = UpdateRow
 
     def get_name(datum):
