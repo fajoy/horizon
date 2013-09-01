@@ -343,6 +343,16 @@ def delete_job(request,group_id,job_id):
     for obj in get_obj_list(request,prefix=prefix,delimiter=None):
         delete_obj(request,obj["name"])
 
+def terminate_group(request,group_id):
+    instances,_more = api.nova.server_list(request)
+    nova_list = dict((instance.id,dict(((attr,getattr(instance,attr,None)))  for attr in instance._attrs))for instance in instances)
+    nova_ids= set(nova_list.keys())
+    meta_list = get_instance_list(request,group_id)
+    meta_ids= set( meta["uuid"] for meta in meta_list)
+    live_ids= meta_ids & nova_ids
+    for id in live_ids:
+        api.nova.server_delete(request,id)
+
 def delete_group(request,group_id):
     instances,_more = api.nova.server_list(request)
     nova_list = dict((instance.id,dict(((attr,getattr(instance,attr,None)))  for attr in instance._attrs))for instance in instances)

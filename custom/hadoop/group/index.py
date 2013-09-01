@@ -7,6 +7,7 @@ from django.utils.http import urlencode
 from django import shortcuts
 
 
+from horizon.templatetags import sizeformat
 from horizon.utils import validators
 from horizon import tables
 from horizon import messages
@@ -249,12 +250,14 @@ class UpdateRow(tables.Row):
         datum = hadoop.get_instance_meta(request,kwargs['group_id'],instance_id)
         try:
             instance = api.nova.server_get(request, instance_id)
+            instance.full_flavor = api.nova.flavor_get(request,
+                                                       instance.flavor["id"])
             datum['instance'] = instance
             datum['state'] = POWER_STATES.get(getattr(instance, "OS-EXT-STS:power_state", 0), '')
+
         except:
             self.table.disable_column_link()
             datum['state'] = "Terminated"
-            pass
         datum["request"]=request
         return datum
 
@@ -337,6 +340,25 @@ class Table(tables.DataTable):
                        verbose_name=_("IP Address"),
                        attrs={'data-type': "ip"})
 
+
+    def get_size(datum):
+        if datum.get('instance',None):
+            instance =  datum['instance']
+            if hasattr(instance, "full_flavor"):
+                size_string = _("%(name)s | %(RAM)s RAM | %(VCPU)s VCPU "
+                            "| %(disk)s Disk")
+                vals = {'name': instance.full_flavor.name,
+                    'RAM': sizeformat.mbformat(instance.full_flavor.ram),
+                    'VCPU': instance.full_flavor.vcpus,
+                    'disk': sizeformat.diskgbformat(instance.full_flavor.disk)}
+                return size_string % vals
+            return _("Not available")
+        return '-'
+
+
+    size = tables.Column(get_size,
+                         verbose_name=_("Size"),
+                         attrs={'data-type': 'size'})
     def get_init(datum):
         if not datum.get("instance",None):
             return  "-"

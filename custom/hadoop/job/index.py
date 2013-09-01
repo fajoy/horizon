@@ -132,10 +132,11 @@ export map_count="1"
 export reduce_count="1"
 export task_max_ram="200m"
 export timeout="600000"
+export sample_size="100000"
 hadoop fs -get ${jar_location} ${jar}
 hadoop jar ${jar} teragen  -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
 hadoop job -history $teragen_out
-hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.reduce.tasks=${reduce_count} ${teragen_out} ${terasort_out}
+hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
 hadoop job -history $terasort_out
 </pre>
 </fieldset>

@@ -309,6 +309,27 @@ class CreateMasterAction(tables.LinkAction):
     url = "horizon:custom:hadoop:create"
     classes = ("ajax-modal", "btn-create")
 
+class TerminateGroupAction(tables.BatchAction):
+    name = "Terminate Group"
+    action_present = _("Terminate")
+    action_past = _("Terminate")
+    data_type_singular = _("Group")
+    data_type_plural = _("Group")
+    classes = ('btn-danger', 'btn-terminate')
+    def __init__(self):
+        super(TerminateGroupAction, self).__init__()
+
+    def allowed(self, request, datum=None):
+        return True
+
+    def action(self, request, group_id):
+        hadoop.terminate_group(request,group_id)
+        return shortcuts.redirect(self.get_success_url(request))
+
+    def get_success_url(self, request=None):
+        return request.get_full_path()
+
+
 class DeleteGroupAction(tables.BatchAction):
     name = "Delete Group"
     action_present = _("Delete")
@@ -350,8 +371,8 @@ class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
         status_columns = ["ajax_state" , ]
-        table_actions = (CreateMasterAction ,  DeleteGroupAction)
-        row_actions = (DeleteGroupAction ,)
+        table_actions = (CreateMasterAction , TerminateGroupAction , DeleteGroupAction)
+        row_actions = (TerminateGroupAction,DeleteGroupAction ,)
         row_class = UpdateRow
 
     def get_name(datum):
