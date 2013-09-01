@@ -237,7 +237,7 @@ class CreateJarAction(tables.LinkAction):
 class JobListAction(tables.LinkAction):
     name = "job_list"
     verbose_name = "Job List"
-    classes = ( "btn" , )
+    classes = ( "btn" , "btn-primary")
 
     def get_link_url(self, datum=None):
         return reverse('horizon:custom:hadoop:job:index', args=(self.table.kwargs["group_id"] , ))

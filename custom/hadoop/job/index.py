@@ -29,6 +29,13 @@ class JobAction(workflows.Action):
     job_name = forms.Field(label=("job name"),
                      required=False,
                      help_text="Hadoop job name.", )
+
+    log_update_sec = forms.IntegerField(label=_("Update interval"),
+                               min_value=0,
+                               initial=3,
+                               help_text=_('Stdout amd Stderr update interval.("0" is when proccess finished updating.)') )
+
+
     def __init__(self, request, context, *args, **kwargs):
         super(JobAction, self).__init__(request, context, *args, **kwargs)
         if context.get("hadoop_group_id",None):
@@ -38,13 +45,13 @@ class JobAction(workflows.Action):
         return True
 
     def get_help_text(self, extra_context=None):
-        return "Input job name."
+        return """Input job name and Stdout amd Stderr update interval seccond second"""
 
         
 class JobStep(workflows.Step):
     slug="job"
     action_class = JobAction
-    contributes = ("hadoop_group_id","job_name")
+    contributes = ("hadoop_group_id","job_name","log_update_sec")
     def contribute(self, data, context):
         context.update(data)
         return context
@@ -440,7 +447,7 @@ class UpdateRow(tables.Row):
 class GroupListAction(tables.LinkAction):
     name = "group_list"
     verbose_name = "Instance List"
-    classes = ( "btn" , )
+    classes = ( "btn" , "btn-primary" )
 
     def get_link_url(self, datum=None):
         return reverse('horizon:custom:hadoop:group:index', args=(self.table.kwargs["group_id"] , ))
