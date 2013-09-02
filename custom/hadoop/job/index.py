@@ -33,7 +33,7 @@ class JobAction(workflows.Action):
     log_update_sec = forms.IntegerField(label=_("Update interval"),
                                min_value=0,
                                initial=3,
-                               help_text=_('Stdout amd Stderr update interval.("0" is when proccess finished updating.)') )
+                               help_text=_('Stdout and Stderr update interval.("0" is when proccess finished updating.)') )
 
 
     def __init__(self, request, context, *args, **kwargs):
