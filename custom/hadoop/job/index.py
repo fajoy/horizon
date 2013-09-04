@@ -92,7 +92,7 @@ class BashAction(workflows.Action):
 <div class="tab-content dropdown_fix">
 <fieldset id="ex1action" class="js-tab-pane tab-pane active">
 Put file example
-<a id="add_script" class="btn add_script">add</a>
+<a id="add_script" class="btn add_script">copy</a>
 <pre id="ex1">
 export bucket="&lt;bucket_name&gt;"   #change you bucket name 
 apt-get install -y wget unzip
@@ -107,7 +107,7 @@ hadoop fs -put hadoop-streaming.jar s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${buck
          
 <fieldset id="ex2action" class="js-tab-pane tab-pane">
 WordCount example
-<a id="add_script" class="btn add_script">add</a>
+<a id="add_script" class="btn add_script">copy</a>
 <pre>
 export bucket="&lt;bucket_name&gt;"   #change you bucket name 
 export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
@@ -127,7 +127,7 @@ hadoop job -history ${wc_out}
  
 <fieldset id="ex3action" class="js-tab-pane tab-pane">
 TeraSort example
-<a id="add_script" class="btn add_script">add</a>
+<a id="add_script" class="btn add_script">copy</a>
 <pre>
 export bucket="&lt;bucket_name&gt;"   #change you bucket name 
 export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
@@ -150,7 +150,7 @@ hadoop job -history $terasort_out
  
 <fieldset id="ex4action" class="js-tab-pane tab-pane">
 Hadoop Stream example
-<a id="add_script" class="btn add_script">add</a>
+<a id="add_script" class="btn add_script">copy</a>
 <pre>
 export bucket="&lt;bucket_name&gt;"   #change you bucket name 
 export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar"
@@ -247,15 +247,15 @@ class JarArgsAction(workflows.Action):
 
     def get_help_text(self, extra_context=None):
         return """
-JAR location: 
+JAR location example: 
 <pre>
-{bucket}/hadoop-examples.jar
+&lt;bucket_name&gt;/hadoop-examples.jar
 </pre>
-JAR arguments:
+JAR arguments example:
 <pre>
 wordcount 
-s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@{bucket}/{input_path}
-s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@{bucket}/{output_path}
+s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;input_path&gt;
+s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;output_path&gt;
 </pre>
 """
 
@@ -320,21 +320,21 @@ class StreamingArgsAction(workflows.Action):
 
     input_location = forms.Field(label=("Input location"),
                      required=True,
-                     help_text=escape("ex: {bucket}/input", ) )
+                     help_text=escape("ex: &lt;bucket_name&gt;/input", ) )
 
     output_location = forms.Field(label=("Output location"),
                      required=True,
-                     help_text=escape("ex: {bucket}/output", ) )
+                     help_text=escape("ex: $lt;bucket_name&gt;/output", ) )
 
 
     mapper = forms.Field(label=("Mapper"),
                      required=True,
-                     help_text=escape("ex: {bucket}/mapper.py"), )
+                     help_text=escape("ex: &lt;bucket_name&gt;/mapper.py"), )
 
 
     reducer = forms.Field(label=("Reducer"),
                      required=True,
-                     help_text=escape("ex: {bucket}/reducer.py"), )
+                     help_text=escape("ex: &lt;bucket_name&gt;/reducer.py"), )
 
     extea_args = forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px;' }),
                             label=_("Extea Arguments (Option)"),
@@ -346,23 +346,23 @@ class StreamingArgsAction(workflows.Action):
 
     def get_help_text(self, extra_context=None):
         return """
-Input location: 
+Input location exmple: 
 <pre>
-{bucket}/input
+&lt;bucket_name&gt;/input
 </pre>
-Output location:
+Output location exmple:
 <pre>
-{bucket}/output
+&lt;bucket_name&gt;/output
 </pre>
-Mapper: 
+Mapper example: 
 <pre>
-{bucket}/string_tokenizer.py 
+&lt;bucket_name&gt;/string_tokenizer.py 
 </pre>
-Reducer:
+Reducer example:
 <pre>
-{bucket}/count.py 
+&lt;bucket_name&gt;/count.py 
 </pre>
-Extea Arguments (Option):
+Extea Arguments example (Option):
 <pre>
 -numReduceTasks [num]  ...etc.
 </pre>
