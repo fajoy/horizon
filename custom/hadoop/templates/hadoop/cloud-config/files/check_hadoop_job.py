@@ -28,9 +28,12 @@ def handle_bash(obj):
     p=subprocess.Popen("bash "+script_path,stdout=stdout,stderr=stderr, shell=True ,env=os.environ)
     log_prefix=".hadoop/job/{group_id}/{id}/log".format(**obj)
     log_dir = "/root/job/{id}/log".format(**obj)
-    while p.poll()==None: #subprocess is running.
-        sleep(3)
-        api.update_obj_from_dir(log_prefix,log_dir)
+    log_update_sec = int(obj.get("log_update_sec",3))
+    if log_update_sec > 0:
+        while p.poll()==None: #subprocess is running.
+            sleep(log_update_sec)
+            api.update_obj_from_dir(log_prefix,log_dir)
+    p.wait()
     api.update_obj_from_dir(log_prefix,log_dir)
 
 def handle_jar(obj):
@@ -61,9 +64,12 @@ hadoop jar {jar_filepath} {jar_args}
     p=subprocess.Popen("bash "+script_path,stdout=stdout,stderr=stderr, shell=True ,env=os.environ)
     log_prefix=".hadoop/job/{group_id}/{id}/log".format(**obj)
     log_dir = "/root/job/{id}/log".format(**obj)
-    while p.poll()==None: #subprocess is running.
-        sleep(3)
-        api.update_obj_from_dir(log_prefix,log_dir)
+    log_update_sec = int(obj.get("log_update_sec",3))
+    if log_update_sec > 0:
+        while p.poll()==None: #subprocess is running.
+            sleep(log_update_sec)
+            api.update_obj_from_dir(log_prefix,log_dir)
+    p.wait()
     api.update_obj_from_dir(log_prefix,log_dir)
 
 
@@ -103,9 +109,12 @@ hadoop job -history  s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@{output_location}
     p=subprocess.Popen("bash "+script_path,stdout=stdout,stderr=stderr, shell=True ,env=os.environ)
     log_prefix=".hadoop/job/{group_id}/{id}/log".format(**obj)
     log_dir = "/root/job/{id}/log".format(**obj)
-    while p.poll()==None: #subprocess is running.
-        sleep(3)
-        api.update_obj_from_dir(log_prefix,log_dir)
+    log_update_sec = int(obj.get("log_update_sec",3))
+    if log_update_sec > 0:
+        while p.poll()==None: #subprocess is running.
+            sleep(log_update_sec)
+            api.update_obj_from_dir(log_prefix,log_dir)
+    p.wait()
     api.update_obj_from_dir(log_prefix,log_dir)
 
 def handle_job(obj):

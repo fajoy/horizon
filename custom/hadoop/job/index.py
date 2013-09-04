@@ -29,6 +29,13 @@ class JobAction(workflows.Action):
     job_name = forms.Field(label=("job name"),
                      required=False,
                      help_text="Hadoop job name.", )
+
+    log_update_sec = forms.IntegerField(label=_("Update interval"),
+                               min_value=0,
+                               initial=3,
+                               help_text=_('Stdout and Stderr update interval.("0" is when proccess finished updating.)') )
+
+
     def __init__(self, request, context, *args, **kwargs):
         super(JobAction, self).__init__(request, context, *args, **kwargs)
         if context.get("hadoop_group_id",None):
@@ -38,13 +45,13 @@ class JobAction(workflows.Action):
         return True
 
     def get_help_text(self, extra_context=None):
-        return "Input job name."
+        return """Input job name and Stdout amd Stderr update interval seccond second."""
 
         
 class JobStep(workflows.Step):
     slug="job"
     action_class = JobAction
-    contributes = ("hadoop_group_id","job_name")
+    contributes = ("hadoop_group_id","job_name","log_update_sec")
     def contribute(self, data, context):
         context.update(data)
         return context
@@ -60,7 +67,7 @@ class BashAction(workflows.Action):
     def __init__(self, request, context, *args, **kwargs):
         super(BashAction, self).__init__(request, context, *args, **kwargs)
         self.fields["script"].initial=context.get("script","""echo `date '+%Y/%m/%d %H:%M:%S'` Start.
-#Script Code
+#Input Script Code
 """)
 
     def handle(self, request, data):
@@ -87,14 +94,14 @@ class BashAction(workflows.Action):
 Put file example
 <a id="add_script" class="btn add_script">add</a>
 <pre id="ex1">
-export bucket="{bucket}"
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
 apt-get install -y wget unzip
 wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-examples.jar.zip
 unzip hadoop-examples.jar.zip
-hadoop fs -put hadoop-examples.jar -put s3n://${bucket}/hadoop-examples.jar 
+hadoop fs -put hadoop-examples.jar s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar 
 wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-streaming.jar.zip
 unzip hadoop-streaming.jar.zip
-hadoop fs -put hadoop-streaming.jar s3n://${bucket}/hadoop-streaming.jar
+hadoop fs -put hadoop-streaming.jar s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar
 </pre>
 </fieldset>
          
@@ -102,8 +109,8 @@ hadoop fs -put hadoop-streaming.jar s3n://${bucket}/hadoop-streaming.jar
 WordCount example
 <a id="add_script" class="btn add_script">add</a>
 <pre>
-export bucket="{bucket}"
-export jar_location="s3n://${bucket}/hadoop-examples.jar"
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
 export jar=`basename ${jar_location}`
 export rtw_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw"
 export wc_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw_wc"
@@ -122,8 +129,8 @@ hadoop job -history ${wc_out}
 TeraSort example
 <a id="add_script" class="btn add_script">add</a>
 <pre>
-export bucket="{bucket}"
-export jar_location="s3n://${bucket}/hadoop-examples.jar"
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
 export jar=`basename ${jar_location}`
 export teragen_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/teragen"
 export terasort_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/terasort"
@@ -145,8 +152,8 @@ hadoop job -history $terasort_out
 Hadoop Stream example
 <a id="add_script" class="btn add_script">add</a>
 <pre>
-export bucket="{bucket}"
-export jar_location="s3n://${bucket}/hadoop-streaming.jar"
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar"
 export jar=`basename ${jar_location}`
 export input="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/input"
 export output="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/output"
@@ -440,7 +447,7 @@ class UpdateRow(tables.Row):
 class GroupListAction(tables.LinkAction):
     name = "group_list"
     verbose_name = "Instance List"
-    classes = ( "btn" , )
+    classes = ( "btn" , "btn-primary" )
 
     def get_link_url(self, datum=None):
         return reverse('horizon:custom:hadoop:group:index', args=(self.table.kwargs["group_id"] , ))
