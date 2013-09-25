@@ -56,16 +56,16 @@ class JobStep(workflows.Step):
         context.update(data)
         return context
 
-class BashAction(workflows.Action):
+class ScriptAction(workflows.Action):
     class Meta:
-        name = "Bash"
+        name = "Script"
 
     script =  forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; width:630px; height: 200px;' }),
-                            label=_("Bash Script"),
+                            label=_("Script"),
                             required=True,
                             )
     def __init__(self, request, context, *args, **kwargs):
-        super(BashAction, self).__init__(request, context, *args, **kwargs)
+        super(ScriptAction, self).__init__(request, context, *args, **kwargs)
         self.fields["script"].initial=context.get("script","""echo `date '+%Y/%m/%d %H:%M:%S'` Start.
 #Input Script Code
 """)
@@ -118,7 +118,7 @@ export size="1024"
 export map_count="1"
 export reduce_count="1"
 hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} randomtextwriter -D test.randomtextwrite.bytes_per_map=$((${size}/${map_count})) -D test.randomtextwrite.total_bytes=${size}  ${rtw_out}
+hadoop jar ${jar} randomtextwriter -D test.randomtextwrite.bytes_per_map=$((${size}/${map_count})) -D test.randomtextwrite.total_bytes=${size} -outFormat org.apache.hadoop.mapred.TextOutputFormat ${rtw_out}
 hadoop job -history ${rtw_out}
 hadoop jar ${jar} wordcount -D mapred.reduce.tasks=${reduce_count} ${rtw_out} ${wc_out}
 hadoop job -history ${wc_out}
@@ -141,9 +141,9 @@ export task_max_ram="200m"
 export timeout="600000"
 export sample_size="100000"
 hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} teragen  -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
+hadoop jar ${jar} teragen -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
 hadoop job -history $teragen_out
-hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
+hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
 hadoop job -history $terasort_out
 </pre>
 </fieldset>
@@ -174,9 +174,9 @@ $("#id_script" ).val($("#id_script" ).val()+$(this).next("pre").text());
 """
  
 
-class BashStep(workflows.Step):
-    slug="bash"
-    action_class = BashAction
+class ScriptStep(workflows.Step):
+    slug="Script"
+    action_class = ScriptAction
     contributes = ("script" , )
     template_name = "custom/hadoop/_workflow_step_horizontal.html"
     def contribute(self, data, context):
@@ -184,14 +184,14 @@ class BashStep(workflows.Step):
         return context
 
 
-class CreateBashWorkflow(workflows.Workflow):
-    slug = "CreateBashWorkflow"
-    name = "Create Bash Job"
+class CreateScriptWorkflow(workflows.Workflow):
+    slug = "CreateScriptWorkflow"
+    name = "Create Script Job"
     finalize_button_name = "Save"
     success_message = 'success_message "{job_name}".'
     failure_message = 'failure_message "{job_name}".'
     default_steps = (JobStep ,
-                     BashStep,)
+                     ScriptStep,)
 
     def get_link_url(self, datum=None):
         url="horzion:custom:hadoop:job:index"
@@ -214,13 +214,13 @@ class CreateBashWorkflow(workflows.Workflow):
 
     def handle(self, request, context):
         context["script"]=normalize_newlines(context["script"])
-        return hadoop.create_bash(request,context)
+        return hadoop.create_script(request,context)
 
-class CreateBashView(workflows.WorkflowView):
-    workflow_class = CreateBashWorkflow
+class CreateScriptView(workflows.WorkflowView):
+    workflow_class = CreateScriptWorkflow
 
     def get_initial(self):
-        initial=super(CreateBashView, self).get_initial()
+        initial=super(CreateScriptView, self).get_initial()
         if self.kwargs.has_key('group_id'):
             initial.update({'hadoop_group_id': self.kwargs['group_id'],})
         job_id=self.request.GET.get("job_id",None)
@@ -452,13 +452,13 @@ class GroupListAction(tables.LinkAction):
     def get_link_url(self, datum=None):
         return reverse('horizon:custom:hadoop:group:index', args=(self.table.kwargs["group_id"] , ))
 
-class CreateBashAction(tables.LinkAction):
+class CreateScriptAction(tables.LinkAction):
     name = "create_bash"
-    verbose_name = "Create Bash Job"
+    verbose_name = "Create Script Job"
     classes = ("ajax-modal", "btn-create")
 
     def get_link_url(self, datum=None):
-        url = "horizon:custom:hadoop:job:create_bash"
+        url = "horizon:custom:hadoop:job:create_script"
         return reverse(url, args=(self.table.kwargs["group_id"] ,))
 
 class CreateJarAction(tables.LinkAction):
@@ -538,7 +538,7 @@ class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Job"
         status_columns = ["ajax_state" , ]
-        table_actions = ( GroupListAction ,CreateBashAction ,CreateJarAction ,CreateStreamingAction, DeleteJobAction)
+        table_actions = ( GroupListAction ,CreateScriptAction ,CreateJarAction ,CreateStreamingAction, DeleteJobAction)
         row_class = UpdateRow 
     def get_name(datum):
         return datum.get("name",None) or datum.get("job_name",None) 
@@ -553,7 +553,7 @@ class Table(tables.DataTable):
             cols[column_name].link=link
 
     def get_type(datum):
-        return datum.get("job_type",None) or "-"
+        return datum.get("script_type",None) or datum.get("job_type",None) or "-"
     job_type = tables.Column(get_type,
                         verbose_name=_("Job Type"),
                         link_classes= ( "ajax-modal","btn")

@@ -375,6 +375,25 @@ def delete_group(request,group_id):
     for obj in get_obj_list(request,prefix=prefix,delimiter=None):
         delete_obj(request,obj["name"])
 
+def create_script(request,context):
+    new_id = str(uuid.uuid1())
+    first_line=context["script"].split("\n")[0]
+    m=re.match(r"^#!([\w/\s]+)",first_line)
+    if not m:
+        create_bash(request,context)
+        return context
+    path=m.group(1)
+    script_type=path.replace("/"," ").split(" ")[-1]
+    context.update(
+                    {
+                     "job_id":new_id 
+                    ,"job_type":"script"
+                    ,"script_type":script_type
+                    }
+                  )
+    save_job_obj(request,context)
+    return context
+
 def create_bash(request,context):
     new_id = str(uuid.uuid1())
     context.update({"job_id":new_id 

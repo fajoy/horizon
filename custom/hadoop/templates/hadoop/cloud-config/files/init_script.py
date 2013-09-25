@@ -10,7 +10,6 @@ import multiprocessing
 import sys
 import subprocess
 
-
 def now():
     import time,datetime
     return datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
@@ -108,7 +107,7 @@ def load_obj(key):
         return json.loads(s)
     return None
 
-def render_template(temp_dict,data):
+def strings_format(temp_dict,data):
     re = {}
     for key in temp_dict:
         temp=temp_dict[key]
@@ -206,7 +205,7 @@ def update_hostname(meta):
 "/etc/hostname":
 """{name}""",
 }
-    conf=render_template(conf_template,meta)
+    conf=strings_format(conf_template,meta)
     for fn in conf:
         with open(fn,'w') as fd:
             fd.write(conf[fn])
@@ -219,57 +218,93 @@ def install_hadoop_conf(meta):
 """<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-    <property>
-        <name>fs.default.name</name>
-        <value>hdfs://{private_ip_address}:8020</value>
-    </property>
-    <property>
-        <name>heartbeat.recheck.interval</name>
-        <value>20</value> 
-    </property>
+  <property><name>fs.default.name</name><value>hdfs://{private_ip_address}:8020</value></property>
+  <property><name>heartbeat.recheck.interval</name><value>20</value></property>
+
+  <property><name>fs.s3.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
+  <property><name>fs.s3n.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
+  <property><name>fs.s3n.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
+  <property><name>fs.s3n.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
+  <property><name>fs.s3.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
+  <property><name>fs.s3.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
+
+  <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
+
+<!--
+  <property><name>hadoop.metrics.list</name><value>TotalLoad,CapacityTotalGB,UnderReplicatedBlocks,CapacityRemainingGB,PendingDeletionBlocks,PendingReplicationBlocks,CorruptBlocks,CapacityUsedGB,numLiveDataNodes,numDeadDataNodes,MissingBlocks</value></property>
+  <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.compression.lzo.LzoCodec,com.hadoop.compression.lzo.LzopCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
+  <property><name>io.compression.codec.lzo.class</name><value>com.hadoop.compression.lzo.LzoCodec</value></property>
+  <property><name>fs.s3bfs.impl</name><value>org.apache.hadoop.fs.s3.S3FileSystem</value></property>
+  <property><name>fs.s3bfs.awsAccessKeyId</name><value></value></property>
+  <property><name>fs.s3bfs.awsSecretAccessKey</name><value></value></property>
+-->
 </configuration>
 """,
 "/etc/hadoop/conf/hdfs-site.xml":
 """<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-    <property>
-        <name>dfs.replication</name>
-        <value>1</value>
-    </property>
-    <property>
-        <name>fs.s3.awsAccessKeyId</name>
-        <value>{EC2_ACCESS_KEY}</value>
-    </property>
-    <property>
-        <name>fs.s3.awsSecretAccessKey</name>
-        <value>{EC2_SECRET_KEY}</value>
-    </property>
-    <property>
-        <name>fs.s3n.awsAccessKeyId</name>
-        <value>{EC2_ACCESS_KEY}</value>
-    </property>
-    <property>
-        <name>fs.s3n.awsSecretAccessKey</name>
-        <value>{EC2_SECRET_KEY}</value>
-    </property>
+  <property><name>dfs.datanode.https.address</name><value>0.0.0.0:50475</value></property>
+  <property><name>dfs.secondary.http.address</name><value>0.0.0.0:50090</value></property>
+  <property><name>dfs.http.address</name><value>0.0.0.0:50070</value></property>
+  <property><name>dfs.https.address</name><value>0.0.0.0:50470</value></property>
+  <property><name>dfs.datanode.http.address</name>0.0.0.0:50075<value></value></property>
+  <property><name>dfs.datanode.address</name><value>0.0.0.0:50010</value></property>
+
+  <property><name>dfs.name.dir</name><value>${{hadoop.tmp.dir}}/dfs/name</value></property>
+  <property><name>dfs.data.dir</name><value>${{hadoop.tmp.dir}}/dfs/data</value></property>
+  <property><name>dfs.replication</name><value>1</value></property>
+
+  <property><name>dfs.datanode.max.xcievers</name><value>4096</value></property>
+  <property><name>dfs.datanode.du.reserved</name><value>536870912</value></property>
+  <property><name>dfs.namenode.handler.count</name><value>64</value></property>
+  <property><name>io.file.buffer.size</name><value>65536</value></property>
+  <property><name>dfs.block.size</name><value>134217728</value></property>
+
+<!--
+  <property><name>dfs.datanode.ipc.address</name><value>0.0.0.0:50020</value></property>
+-->
 </configuration>
 """,
 "/etc/hadoop/conf/mapred-site.xml":
 """<?xml version="1.0"?>
 <configuration>
-    <property>
-        <name>mapred.job.tracker</name>
-        <value>{private_ip_address}:9001</value>
-    </property>
-    <property>
-        <name>mapred.tasktracker.map.tasks.maximum</name>
-        <value>{map_count}</value>
-    </property>
-    <property>
-      <name>mapred.tasktracker.reduce.tasks.maximum</name>
-      <value>{reduce_count}</value>
-    </property>
+  <property><name>hadoop.job.history.user.location</name><value></value></property>
+  <property><name>tasktracker.http.threads</name><value>20</value></property>
+
+  <property><name>mapred.job.tracker.handler.count</name><value>64</value></property>
+
+  <property><name>mapred.job.tracker</name><value>{private_ip_address}:9001</value></property>
+  <property><name>mapred.job.tracker.http.address</name><value>0.0.0.0:50030</value></property>
+
+  <property><name>mapred.task.tracker.http.address</name><value>0.0.0.0:50060</value></property>
+
+  <property><name>mapred.tasktracker.map.tasks.maximum</name><value>{map_count}</value></property>
+  <property><name>mapred.tasktracker.reduce.tasks.maximum</name><value>{reduce_count}</value></property>
+
+  <property><name>mapred.reduce.tasks</name><value>7</value></property>
+
+  <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
+
+  <property><name>mapred.max.split.size</name><value>67108864</value></property>
+  <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
+
+  <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
+  <property><name>mapred.job.reuse.jvm.num.tasks</name><value>20</value></property>
+
+  <property><name>mapred.reduce.parallel.copies</name><value>20</value></property>
+  <property><name>mapred.reduce.tasksperslot</name><value>1.75</value></property>
+
+  <property><name>io.sort.mb</name><value>200</value></property>
+  <property><name>io.sort.factor</name><value>48</value></property>
+
+<!--
+  <property><name>mapred.map.output.compression.codec</name><value>org.apache.hadoop.io.compress.SnappyCodec</value></property>
+  <property><name>mapred.compress.map.output</name><value>true</value></property>
+  <property><name>mapred.output.compression.codec</name><value>org.apache.hadoop.io.compress.GzipCodec</value></property>
+  <property><name>mapred.output.direct.NativeS3FileSystem</name><value>true</value></property>
+  <property><name>mapred.output.committer.class</name><value>org.apache.hadoop.mapred.DirectFileOutputCommitter</value></property>
+-->
 </configuration>
 """}
 
@@ -278,12 +313,11 @@ def install_hadoop_conf(meta):
     master_meta["cpu_count"]=multiprocessing.cpu_count()
     master_meta["map_count"]=multiprocessing.cpu_count()*2
     master_meta["reduce_count"]=multiprocessing.cpu_count()
-    conf=render_template(conf_template,master_meta)
+    conf=strings_format(conf_template,master_meta)
     for fn in conf:
         with open(fn,'w') as fd:
             fd.write(conf[fn])
             fd.close()
-
 
 def update_crontab(meta):
     crontab = """# /etc/crontab: system-wide crontab
@@ -312,8 +346,6 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
         fd.write(crontab)
         fd.close()
 
-
-
 meta = dict(os.environ.__dict__["data"])
 tenant_id= meta["OS_TENANT_ID"]
 group_id= meta["HADOOP_GROUP_ID"]
@@ -330,6 +362,6 @@ if __name__ == "__main__":
     update_obj_meta_data(meta)
     update_file_meta_data(meta)
     update_hostname(meta)
-    make_hosts_obj(meta)
     install_hadoop_conf(meta)
+    make_hosts_obj(meta)
     update_crontab(meta)
