@@ -231,6 +231,7 @@ def install_hadoop_conf(meta):
   <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
 
 <!--
+  <property><name>mapred.child.java.opts</name><value>200m</value></property>
   <property><name>hadoop.metrics.list</name><value>TotalLoad,CapacityTotalGB,UnderReplicatedBlocks,CapacityRemainingGB,PendingDeletionBlocks,PendingReplicationBlocks,CorruptBlocks,CapacityUsedGB,numLiveDataNodes,numDeadDataNodes,MissingBlocks</value></property>
   <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,com.hadoop.compression.lzo.LzoCodec,com.hadoop.compression.lzo.LzopCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
   <property><name>io.compression.codec.lzo.class</name><value>com.hadoop.compression.lzo.LzoCodec</value></property>
@@ -255,13 +256,12 @@ def install_hadoop_conf(meta):
   <property><name>dfs.data.dir</name><value>${{hadoop.tmp.dir}}/dfs/data</value></property>
   <property><name>dfs.replication</name><value>1</value></property>
 
+<!--
   <property><name>dfs.datanode.max.xcievers</name><value>4096</value></property>
   <property><name>dfs.datanode.du.reserved</name><value>536870912</value></property>
   <property><name>dfs.namenode.handler.count</name><value>64</value></property>
   <property><name>io.file.buffer.size</name><value>65536</value></property>
   <property><name>dfs.block.size</name><value>134217728</value></property>
-
-<!--
   <property><name>dfs.datanode.ipc.address</name><value>0.0.0.0:50020</value></property>
 -->
 </configuration>
@@ -289,6 +289,7 @@ def install_hadoop_conf(meta):
   <property><name>mapred.max.split.size</name><value>67108864</value></property>
   <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
 
+<!--
   <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
   <property><name>mapred.job.reuse.jvm.num.tasks</name><value>20</value></property>
 
@@ -298,7 +299,6 @@ def install_hadoop_conf(meta):
   <property><name>io.sort.mb</name><value>200</value></property>
   <property><name>io.sort.factor</name><value>48</value></property>
 
-<!--
   <property><name>mapred.map.output.compression.codec</name><value>org.apache.hadoop.io.compress.SnappyCodec</value></property>
   <property><name>mapred.compress.map.output</name><value>true</value></property>
   <property><name>mapred.output.compression.codec</name><value>org.apache.hadoop.io.compress.GzipCodec</value></property>
