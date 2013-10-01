@@ -39,21 +39,20 @@ Content-Disposition: attachment; filename="1init_script.sh"
 #==output to console==
 exec 1>/dev/console
 exec 2>/dev/console
-source /etc/profile
 echo "====BEGIN rc.sh======="
-ifconfig eth0 mtu 1454
 tee /etc/rc.local <<EOF
 #!/bin/bash
 exec 1>/dev/console
 exec 2>/dev/console
-ifconfig eth0 mtu 1454
 exit 0
 EOF
+source /etc/profile
 ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
 tee /etc/timezone <<<Asia/Taipei
+cd ~/
 echo "====Install boto"
 pip install boto --upgrade
-tee /root/.boto <<EOF
+tee ~/.boto <<EOF
 [Credentials]
 aws_access_key_id = {{ ec2_access_key }}
 aws_secret_access_key = {{ ec2_secret_key }}
@@ -76,9 +75,8 @@ export EC2_ACCESS_KEY={{ ec2_access_key }}
 export EC2_SECRET_KEY={{ ec2_secret_key }}
 EOF
 source /etc/profile
-echo "====Install jets3t setting"
-cd /tmp
-tee /tmp/jets3t.properties <<EOF
+echo "====Install jets3t setting and hadoop-core-fix"
+tee jets3t.properties <<EOF
 s3service.s3-endpoint={{ s3_host }}
 s3service.https-only=false
 s3service.s3-endpoint-http-port=80
@@ -91,15 +89,17 @@ httpclient.socket-timeout-ms=6000000
 httpclient.max-connections=10000
 EOF
 zip -r /usr/lib/hadoop/hadoop-core-*.jar . -i jets3t.properties
-echo "====make script======="
 hadoop fs -get s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@custom-$OS_TENANT_ID/.hadoop/$HADOOP_GROUP_ID/init_script.zip /root/init_script.zip
-cd /root
 unzip init_script.zip
-cp files/jets3t-0.6.1.jar /usr/share/hadoop/lib/jets3t-0.6.1.jar
+cp ~/files/jets3t-0.6.1.jar /usr/share/hadoop/lib/jets3t-0.6.1.jar
+cd ~/files/hadoop-core-fix/
+zip -r /usr/lib/hadoop/hadoop-core-*.jar . -i org/apache/hadoop/fs/s3native/*
+cd ~/
 source /etc/profile
-source /root/.eucarc
-python files/init_script.py
-python files/check_hadoop_deamon.py
+source ~/.eucarc
+echo "====init_script.py======="
+python ~/files/init_script.py
+python ~/files/check_hadoop_deamon.py
 echo "=====END rc.sh========"
 {% if user_script %}
 --=={{ hadoop_group_id }}==

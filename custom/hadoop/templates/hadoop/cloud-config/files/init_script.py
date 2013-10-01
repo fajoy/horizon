@@ -229,6 +229,7 @@ def install_hadoop_conf(meta):
   <property><name>fs.s3.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
 
   <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
+  <property><name>fs.s3.block.size</name><value></value></property>
 
 <!--
   <property><name>mapred.child.java.opts</name><value>200m</value></property>
@@ -286,7 +287,6 @@ def install_hadoop_conf(meta):
 
   <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
 
-  <property><name>mapred.max.split.size</name><value>67108864</value></property>
   <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
 
 <!--
