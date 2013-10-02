@@ -66,9 +66,7 @@ class ScriptAction(workflows.Action):
                             )
     def __init__(self, request, context, *args, **kwargs):
         super(ScriptAction, self).__init__(request, context, *args, **kwargs)
-        self.fields["script"].initial=context.get("script","""echo `date '+%Y/%m/%d %H:%M:%S'` Start.
-#Input Script Code
-""")
+        self.fields["script"].initial=context.get("script","""""")
 
     def handle(self, request, data):
         return True
@@ -87,6 +85,9 @@ class ScriptAction(workflows.Action):
         </li>
         <li class="">
           <a href="#ex4action" data-toggle="tab" data-target="#ex4action">Streaming</a>
+        </li>
+        <li class="">
+          <a href="#ex4action" data-toggle="tab" data-target="#ex5action">Boto</a>
         </li>
 </ul>
 <div class="tab-content dropdown_fix">
@@ -119,9 +120,9 @@ export map_count="1"
 export reduce_count="1"
 hadoop fs -get ${jar_location} ${jar}
 hadoop jar ${jar} randomtextwriter -D test.randomtextwrite.bytes_per_map=$((${size}/${map_count})) -D test.randomtextwrite.total_bytes=${size} -outFormat org.apache.hadoop.mapred.TextOutputFormat ${rtw_out}
-hadoop job -history ${rtw_out}
+hadoop job -history all ${rtw_out}
 hadoop jar ${jar} wordcount -D mapred.reduce.tasks=${reduce_count} ${rtw_out} ${wc_out}
-hadoop job -history ${wc_out}
+hadoop job -history all ${wc_out}
 </pre>
 </fieldset>
  
@@ -142,9 +143,9 @@ export timeout="600000"
 export sample_size="100000"
 hadoop fs -get ${jar_location} ${jar}
 hadoop jar ${jar} teragen -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
-hadoop job -history $teragen_out
+hadoop job -history all ${teragen_out}
 hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
-hadoop job -history $terasort_out
+hadoop job -history all ${terasort_out}
 </pre>
 </fieldset>
  
@@ -162,7 +163,27 @@ export reducer="/usr/bin/wc"
 export reduce_count="1"
 hadoop fs -get ${jar_location} ${jar}
 hadoop jar ${jar} -input ${input} -output ${output} -mapper ${mapper} -reducer ${reducer} -numReduceTasks ${reduce_count}
-hadoop job -history $output
+hadoop job -history all ${output}
+</pre>
+</fieldset>
+
+<fieldset id="ex5action" class="js-tab-pane tab-pane">
+Boto example
+<a id="add_script" class="btn add_script">copy</a>
+<pre>
+#!/usr/bin/env python
+#ref https://github.com/boto/boto/blob/develop/docs/source/s3_tut.rst
+import boto
+from boto.s3.key import Key
+bucket_name="" #input bucket name
+s3 = boto.connect_s3()
+bucket = s3.lookup(bucket_name)
+if bucket is None: #bucket not exist
+    bucket = s3.create_bucket(bucket_name) #create bucket
+key = Key(bucket,"hello/hello.txt") #set key
+key.set_contents_from_string("hello world this is boto.") #put object
+key = bucket.lookup("hello/hello.txt") #get key
+print key.get_contents_as_string(headers={'Range' : 'bytes=0-11'}) #get object
 </pre>
 </fieldset>
 
