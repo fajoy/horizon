@@ -121,8 +121,8 @@ echo hadoop fs -get s3n://{reducer} ./ >&2
 hadoop fs -get s3n://{reducer} ./
 
 
-echo hadoop jar {jar_filename} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}  {extea_args} >&2
-hadoop jar {jar_filename} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}  {extea_args} 
+echo hadoop jar {jar_filename} {extea_args} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}  {extea_args} >&2
+hadoop jar {jar_filename} {extea_args} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}
 
 echo hadoop job -history  s3n://{output_location} >&2
 hadoop job -history  s3n://{output_location} 
