@@ -283,13 +283,13 @@ def install_hadoop_conf(meta):
   <property><name>mapred.tasktracker.map.tasks.maximum</name><value>{map_count}</value></property>
   <property><name>mapred.tasktracker.reduce.tasks.maximum</name><value>{reduce_count}</value></property>
 
-  <property><name>mapred.reduce.tasks</name><value>7</value></property>
 
   <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
 
   <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
 
 <!--
+  <property><name>mapred.reduce.tasks</name><value>7</value></property>
   <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
   <property><name>mapred.job.reuse.jvm.num.tasks</name><value>20</value></property>
 
