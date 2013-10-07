@@ -18,7 +18,7 @@
 
 編輯 openstack_dashboard/local/local_settings.py ::
 
-    CUSTOM_HADOOP_IMAGE_LIST=["9622d821-fe51-454d-9ed2-310ab53ec30a" ,]
+    CUSTOM_HADOOP_IMAGE_LIST=["d759863b-c219-4513-8963-b98dc055177f" ,]
     CUSTOM_HADOOP_S3_HOST = "s3.nctu.edu.tw"
     OPENSTACK_HOST = "openstack-grizzly.it.nctu.edu.tw"
     INSTALLED_APPS = (
@@ -51,23 +51,33 @@
 
     ./run_tests.sh --runserver 0.0.0.0:8000
 
+
+* 變更Session有效時間(需與keystone token有效時間相同) ::
+    #session time 2 hour
+    SESSION_COOKIE_AGE = 7200
+
+
 Custom Hadoop Ubuntu Cloud QCOW2 Image 製作 
 ------------
 
-* 先利用一台Ubuntu Instance啟動後登入 ::
+* 先利用一台Ubuntu Instance啟動後登入(root disk 約要5G size) ::
 
     #安裝所需套件
     sudo -i 
-    apt-get install qemu-utils 
-
+    apt-get install qemu-utils  -y
+    
     #可到 http://cloud-images.ubuntu.com/releases/ 上取得所需修改版本的image 
-    wget http://cloud-images.ubuntu.com/releases/12.04.2/release/ubuntu-12.04.2-server-cloudimg-amd64-disk1.img
-
+    wget http://cloud-images.ubuntu.com/releases/precise/release/ubuntu-12.04.2-server-cloudimg-amd64-disk1.img
+    
     #載入nbd kernel module
     modprobe nbd
 
     #連接image檔到nbd裝置上
     qemu-nbd -c /dev/nbd0 `readlink -f ./ubuntu-12.04.2-server-cloudimg-amd64-disk1.img`
+    
+    #重調整size
+    e2fsck -fp /dev/nbd0p1
+    resize2fs /dev/nbd0p1
 
     #mount nbd裝置
     mount  /dev/nbd0p1 /mnt
@@ -75,25 +85,27 @@ Custom Hadoop Ubuntu Cloud QCOW2 Image 製作
     mount -t proc none /mnt/proc
     mount -o bind /sys /mnt/sys
     mount -o bind /tmp /mnt/tmp
-
+    
     #切換root到image上
     chroot /mnt /bin/bash
-
+    
     #設定name     server
     mv /etc/resolv.conf /etc/resolv.conf.bak
     echo "nameserver 8.8.8.8" > /etc/resolv.conf
-
+    
     #開始安裝java與hadoop套件
     add-apt-repository  ppa:webupd8team/java
     add-apt-repository ppa:hadoop-ubuntu/stable
     apt-get update
     apt-get install oracle-java6-installer oracle-java6-set-default -y
-    apt-get install hadoop -y
-
+    apt-get install hadoop pig hive -y
+    apt-get install python-pip zip -y
+    pip install boto --upgrade
+    
     #清除cache
     rm -r /var/cache/oracle-jdk6-installer
     rm -r /var/cache/apt/archives/*.deb
-
+    
     #還原nameserver 設定
     rm /etc/resolv.conf
     mv /etc/resolv.conf.bak /etc/resolv.conf
@@ -101,10 +113,12 @@ Custom Hadoop Ubuntu Cloud QCOW2 Image 製作
     exit
 
     #umount image
-    umount  /mnt/
+    umount  /mnt/*
+    umount -l /mnt
     qemu-nbd -d /dev/nbd0
-
+    
     #之後就可將image上傳使用
+    
 
 
 
