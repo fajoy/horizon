@@ -345,7 +345,7 @@ class StreamingArgsAction(workflows.Action):
 
     output_location = forms.Field(label=("Output location"),
                      required=True,
-                     help_text=escape("ex: $lt;bucket_name&gt;/output", ) )
+                     help_text=escape("ex: &lt;bucket_name&gt;/output", ) )
 
 
     mapper = forms.Field(label=("Mapper"),
