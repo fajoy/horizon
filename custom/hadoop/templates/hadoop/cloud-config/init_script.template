@@ -9,18 +9,9 @@ Content-Disposition: attachment; filename="0_cloud-init"
 
 #cloud-config
 #ref https://cloudinit.readthedocs.org/en/latest/topics/examples.html
-apt_sources:
- - source: "ppa:webupd8team/java"
-
-apt_sources:
- - source: "ppa:hadoop-ubuntu/dev"
 
 apt_mirror: http://ubuntu.cs.nctu.edu.tw/ubuntu/
-repo_update: true
-
-packages:
- - python-pip
- - zip
+repo_update: false
 
 {% if admin_pass %}
 chpasswd:
@@ -51,7 +42,6 @@ ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
 tee /etc/timezone <<<Asia/Taipei
 cd ~/
 echo "====Install boto"
-pip install boto --upgrade
 tee ~/.boto <<EOF
 [Credentials]
 aws_access_key_id = {{ ec2_access_key }}
