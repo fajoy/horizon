@@ -322,13 +322,30 @@ class _SimpleDisassociateIP(SimpleDisassociateIP):
                        args=(kwargs["group_id"],))
         return shortcuts.redirect(url)
 
+
+class RebootInstance(tables.BatchAction):
+    name = "reboot"
+    action_present = _("Hard Reboot")
+    action_past = _("Hard Rebooted")
+    data_type_singular = _("Instance")
+    data_type_plural = _("Instances")
+    classes = ('btn-danger', 'btn-reboot')
+
+    def allowed(self, request, instance=None):
+        return True
+
+    def action(self, request, obj_id):
+        api.nova.server_reboot(request, obj_id, api.nova.REBOOT_HARD)
+
+
+
 class Table(tables.DataTable):
     class Meta:
         name = "Hadoop Group"
         table_actions = ()
         status_columns = ["ajax_state" , ]
-        table_actions = ( JobListAction, CreateSlaveAction, TerminateInstance )
-        row_actions = ( _AssociateIP,_SimpleDisassociateIP, TerminateInstance)
+        table_actions = ( JobListAction, CreateSlaveAction,RebootInstance,TerminateInstance )
+        row_actions = ( _AssociateIP,_SimpleDisassociateIP,RebootInstance,TerminateInstance)
         row_class = UpdateRow
 
     def get_ajax_state(datum):
