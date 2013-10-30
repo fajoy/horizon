@@ -244,10 +244,9 @@ class JobListAction(tables.LinkAction):
 
 
 def get_full_flavor(request,flavor_id):
-
     key = "flavor-%s"%(flavor_id ,)
     ret = cache.get(key,None)
-    if not ret is None:
+    if ret:
         return ret
 
     full_flavor = api.nova.flavor_get(request,flavor_id)
