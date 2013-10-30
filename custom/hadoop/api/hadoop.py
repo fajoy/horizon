@@ -13,11 +13,24 @@ import uuid
 import json
 import tempfile
 import zipfile
+import random
+from openstack_dashboard.api.nova import novaclient , Server
+from novaclient.v1_1 import client as nova_client
+
 
 CUSTOM_CONTAINER_NAME = getattr(settings,"CUSTOM_CONTAINER_NAME" , "custom-{user.tenant_id}" )
 CUSTOM_HADOOP_IMAGE_LIST = getattr(settings,"CUSTOM_HADOOP_IMAGE_LIST" , [] ) 
 CUSTOM_HADOOP_PREFIX =  getattr(settings,"CUSTOM_HADOOP_PREFIX" , ".hadoop/" ) 
 CUSTOM_HADOOP_S3_HOST = getattr(settings,"CUSTOM_HADOOP_S3_HOST" , "" )
+
+
+def generate_uid(topic, size=8):
+    characters = '01234567890abcdefghijklmnopqrstuvwxyz'
+    choices = [random.choice(characters) for _x in xrange(size)]
+    return '%s-%s' % (topic, ''.join(choices))
+
+def generate_reservation_id():
+    return generate_uid('r')
 
 def get_image_list(request):
     return CUSTOM_HADOOP_IMAGE_LIST
@@ -121,7 +134,7 @@ def get_group_list(request):
     l = get_obj_list(request,prefix=CUSTOM_HADOOP_PREFIX+"meta")
     data = []
     for datum in l:
-        m=re.search(r"(?P<name>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",datum["name"])
+        m=re.search(r"meta/(?P<name>.*)/?$",datum["name"])
         if m:
             datum.update(m.groupdict())
             datum["hadoop_group_id"]=datum["name"]
@@ -246,7 +259,7 @@ def create_master(request,context):
         else:
             nics = None
 
-        hadoop_group_id = gen_id()
+        hadoop_group_id = generate_reservation_id()
         data = {}
         data.update(context)
         data["tenant_id"]=request.user.tenant_id
@@ -255,21 +268,25 @@ def create_master(request,context):
         data["hadoop_master_name"]=context['name']+'-master'
         data["s3_host"]=CUSTOM_HADOOP_S3_HOST
         make_init_script_object(request,hadoop_group_id,data)
-
         template = 'custom/hadoop/cloud-config/init_script.template'
         custom_script = render_to_string(template,data)
+        meta={}
+        data["reservation_id"]= hadoop_group_id
         try:
-            instance = api.nova.server_create(request,
+            instance = Server(novaclient(request).servers.create(
                                    data["hadoop_master_name"],
                                    data['source_id'],
                                    data['flavor'],
-                                   data['keypair_id'],
-                                   normalize_newlines(custom_script),
-                                   context['security_group_ids'],
-                                   dev_mapping,
+                                   key_name=data['keypair_id'],
+                                   userdata= normalize_newlines(custom_script),
+                                   security_groups=context['security_group_ids'],
+                                   block_device_mapping = dev_mapping,
+                                   reservation_id=data["reservation_id"],
+                                   meta=meta,
                                    nics=nics,
-                                   instance_count = 1,
-                                   admin_pass=data['admin_pass'])
+                                   min_count = 1,
+                                   admin_pass=data['admin_pass'],
+                                    ), request)
             instance = api.nova.server_get(request, instance.id)
             instance_meta=  dict(((attr,getattr(instance,attr,None))  for attr in instance._attrs))
             instance_meta["HADOOP_GROUP_ID"]=data["hadoop_group_id"]
@@ -303,17 +320,23 @@ def _create_slave(request,data):
     else:
         nics = None
 
-    instance = api.nova.server_create(request,
-                           data["name"]+"-slave",
-                           data['source_id'],
-                           data['flavor'],
-                           data['keypair_id'],
-                           normalize_newlines(custom_script),
-                           data['security_group_ids'],
-                           dev_mapping,
-                           nics=nics,
-                           instance_count = 1,
-                           admin_pass=data['admin_pass'])
+
+    meta={}
+    instance = Server(novaclient(request).servers.create(
+                                   data["name"]+"-slave",
+                                   data['source_id'],
+                                   data['flavor'],
+                                   key_name=data['keypair_id'],
+                                   userdata= normalize_newlines(custom_script),
+                                   security_groups=data['security_group_ids'],
+                                   block_device_mapping = dev_mapping,
+                                   reservation_id=data["reservation_id"],
+                                   meta=meta,
+                                   nics=nics,
+                                   min_count = 1,
+                                   admin_pass=data['admin_pass'],
+                                    ), request)
+
 
     api.nova.server_update(request,instance.id,data["name"]+"-"+instance.id)
     instance = api.nova.server_get(request, instance.id)

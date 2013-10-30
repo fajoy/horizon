@@ -9,6 +9,7 @@ import json
 import multiprocessing
 import sys
 import subprocess
+import time
 
 def now():
     import time,datetime
@@ -88,8 +89,9 @@ def get_instances_meta():
         _instances.update(i)
     return _instances
 
-def get_ec2_meta_data():
-    ec2_id = get_local_ec2_id()
+def get_ec2_meta_data(ec2_id=None):
+    if ec2_id is None:
+        ec2_id = get_local_ec2_id()
     instances = get_instances_meta()
     return instances[ec2_id]
 
@@ -273,6 +275,7 @@ def install_hadoop_conf(meta):
   <property><name>hadoop.job.history.user.location</name><value></value></property>
   <property><name>tasktracker.http.threads</name><value>20</value></property>
 
+  <property><name>mapreduce.jobtracker.staging.root.dir</name> <value>/user</value></property>
   <property><name>mapred.job.tracker.handler.count</name><value>64</value></property>
 
   <property><name>mapred.job.tracker</name><value>{private_ip_address}:9001</value></property>
@@ -287,7 +290,6 @@ def install_hadoop_conf(meta):
   <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
 
   <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
-
 <!--
   <property><name>mapred.reduce.tasks</name><value>7</value></property>
   <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
@@ -307,13 +309,17 @@ def install_hadoop_conf(meta):
 -->
 </configuration>
 """}
-
-    master_meta=get_obj_meta_data(dict(HADOOP_GROUP_ID=meta["HADOOP_GROUP_ID"],
+    kwargs = {}
+    while True: 
+        kwargs = get_obj_meta_data(dict(HADOOP_GROUP_ID=meta["HADOOP_GROUP_ID"],
                                     uuid=meta["HADOOP_MASTER_ID"]))
-    master_meta["cpu_count"]=multiprocessing.cpu_count()
-    master_meta["map_count"]=multiprocessing.cpu_count()*2
-    master_meta["reduce_count"]=multiprocessing.cpu_count()
-    conf=strings_format(conf_template,master_meta)
+        if kwargs.get('private_ip_address',None):
+            break
+        time.sleep(1)
+    kwargs["cpu_count"]=multiprocessing.cpu_count()
+    kwargs["map_count"]=multiprocessing.cpu_count()*2
+    kwargs["reduce_count"]=multiprocessing.cpu_count()
+    conf=strings_format(conf_template,kwargs)
     for fn in conf:
         with open(fn,'w') as fd:
             fd.write(conf[fn])
@@ -356,9 +362,6 @@ if __name__ == "__main__":
     meta.update(get_obj_meta_data(meta))
     meta.update(get_ec2_meta_data())
     instance_id=meta["uuid"]
-    meta["cpu_count"]=multiprocessing.cpu_count()
-    meta["map_count"]=multiprocessing.cpu_count()*2
-    meta["reduce_count"]=multiprocessing.cpu_count()
     update_obj_meta_data(meta)
     update_file_meta_data(meta)
     update_hostname(meta)
