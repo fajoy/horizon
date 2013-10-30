@@ -359,7 +359,7 @@ class UpdateRow(tables.Row):
             search_opts= {}
             instances,_more = api.nova.server_list(request,search_opts=search_opts )
             inst_ids_cache = [inst.id for inst in instances]
-            request.session["instances_ids_cache"]= instances_ids_cache
+            request.session["instances_ids_cache"]= inst_ids_cache
         
         inst_ids_cache = request.session["instances_ids_cache"]
         meta_list= hadoop.get_instance_list(request,datum["hadoop_group_id"])
