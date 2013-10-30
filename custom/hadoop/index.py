@@ -2,6 +2,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.text import normalize_newlines
 from django.core.urlresolvers import reverse
 from django import shortcuts
+from django.core.cache import cache
 from horizon import tables
 from horizon import messages
 from horizon import exceptions
@@ -350,18 +351,22 @@ class DeleteGroupAction(tables.BatchAction):
     def get_success_url(self, request=None):
         return request.get_full_path()
 
+def get_server_ids(request,search_opts={}):
+    key ="inst-ids-%s" %( request.user.tenant_id,)
+    ret = cache.get(key,None)
+    if ret:
+        return ret
+    instances,_more = api.nova.server_list(request,search_opts=search_opts)
+    ret = [inst.id for inst in instances]
+    cache.set(key,ret,10)
+    return ret
+
 class UpdateRow(tables.Row):
     ajax = True
     def get_data(self, request,id):
         datum = hadoop.get_group_meta(request,id)
         datum["request"]= request
-        if not request.session.has_key("instances_ids_cache"):
-            search_opts= {}
-            instances,_more = api.nova.server_list(request,search_opts=search_opts )
-            inst_ids_cache = [inst.id for inst in instances]
-            request.session["instances_ids_cache"]= inst_ids_cache
-        
-        inst_ids_cache = request.session["instances_ids_cache"]
+        inst_ids_cache = get_server_ids(request)
         meta_list= hadoop.get_instance_list(request,datum["hadoop_group_id"])
         datum["instance_count"]= str(len(meta_list))
         meta_ids= set( meta["uuid"] for meta in meta_list)
