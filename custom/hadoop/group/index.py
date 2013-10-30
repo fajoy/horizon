@@ -5,7 +5,7 @@ from django.core import urlresolvers
 from django import template
 from django.utils.http import urlencode
 from django import shortcuts
-
+from django.core.cache import cache
 
 from horizon.templatetags import sizeformat
 from horizon.utils import validators
@@ -101,7 +101,7 @@ class SetAccessControlsAction(workflows.Action):
                                                    "authentication."),
                                        add_item_link=KEYPAIR_IMPORT_URL)
     admin_pass = forms.RegexField(
-            label=_("Root Pass"),
+            label=_("Root Password"),
             required=False,
             widget=forms.PasswordInput(render_value=False),
             regex=validators.password_validator(),
@@ -243,6 +243,30 @@ class JobListAction(tables.LinkAction):
         return reverse('horizon:custom:hadoop:job:index', args=(self.table.kwargs["group_id"] , ))
 
 
+def get_full_flavor(request,flavor_id):
+
+    key = "flavor-%s"%(flavor_id ,)
+    ret = cache.get(key,None)
+    if not ret is None:
+        return ret
+
+    full_flavor = api.nova.flavor_get(request,flavor_id)
+
+    if full_flavor is None:
+        ret = _("Not available")
+        cache.set(key,ret,300)
+        return ret
+    size_string = _("%(name)s | %(RAM)s RAM | %(VCPU)s VCPU "
+                "| %(disk)s Disk")
+    vals = {'name': full_flavor.name,
+        'RAM': sizeformat.mbformat(full_flavor.ram),
+        'VCPU': full_flavor.vcpus,
+        'disk': sizeformat.diskgbformat(full_flavor.disk)}
+
+    ret = size_string % vals
+    cache.set(key,ret,1800)
+    return ret
+
 class UpdateRow(tables.Row):
     ajax = True
     def get_data(self, request,instance_id):
@@ -250,8 +274,7 @@ class UpdateRow(tables.Row):
         datum = hadoop.get_instance_meta(request,kwargs['group_id'],instance_id)
         try:
             instance = api.nova.server_get(request, instance_id)
-            instance.full_flavor = api.nova.flavor_get(request,
-                                                       instance.flavor["id"])
+            datum['full_flavor'] = get_full_flavor(request,instance.flavor["id"])
             datum['instance'] = instance
             datum['state'] = POWER_STATES.get(getattr(instance, "OS-EXT-STS:power_state", 0), '')
 
@@ -260,7 +283,6 @@ class UpdateRow(tables.Row):
             datum['state'] = "Terminated"
         datum["request"]=request
         return datum
-
 
 class _AssociateIP(AssociateIP):
     def get_link_url(self, datum):
@@ -299,7 +321,6 @@ class _SimpleDisassociateIP(SimpleDisassociateIP):
         url = urlresolvers.reverse("horizon:custom:hadoop:group:index",
                        args=(kwargs["group_id"],))
         return shortcuts.redirect(url)
-
 
 class Table(tables.DataTable):
     class Meta:
@@ -342,20 +363,7 @@ class Table(tables.DataTable):
 
 
     def get_size(datum):
-        if datum.get('instance',None):
-            instance =  datum['instance']
-            if hasattr(instance, "full_flavor"):
-                size_string = _("%(name)s | %(RAM)s RAM | %(VCPU)s VCPU "
-                            "| %(disk)s Disk")
-                vals = {'name': instance.full_flavor.name,
-                    'RAM': sizeformat.mbformat(instance.full_flavor.ram),
-                    'VCPU': instance.full_flavor.vcpus,
-                    'disk': sizeformat.diskgbformat(instance.full_flavor.disk)}
-                return size_string % vals
-            return _("Not available")
-        return '-'
-
-
+        return datum.get('full_flavor','-')
     size = tables.Column(get_size,
                          verbose_name=_("Size"),
                          attrs={'data-type': 'size'})
