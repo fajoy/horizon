@@ -16,7 +16,7 @@ repo_update: false
 {% if admin_pass %}
 chpasswd:
   list: |
-    root:{{admin_pass}}
+    root:{{admin_pass | safe}}
   expire: False
 {% endif %}
 ssh_pwauth: True
@@ -47,7 +47,7 @@ aws_access_key_id = {{ ec2_access_key }}
 aws_secret_access_key = {{ ec2_secret_key }}
 
 [s3]
-host = {{ s3_host }}
+host = {{ s3_host | safe}}
 calling_format = boto.s3.connection.OrdinaryCallingFormat
 
 [Boto]
@@ -97,5 +97,5 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="2user_data_script.sh"
 
-{{ user_script }}
+{{ user_script | safe }}
 {% endif %}
