@@ -35,7 +35,6 @@ tee /etc/rc.local <<EOF
 #!/bin/bash
 exec 1>/dev/console
 exec 2>/dev/console
-exit 0
 EOF
 source /etc/profile
 ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
