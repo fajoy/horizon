@@ -144,6 +144,7 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 
+140.113.98.246  s3.nctu.edu.tw
 {hosts}
 """.format(**dict(hosts=_hosts))
     set_obj(key,hosts)
@@ -223,10 +224,11 @@ def install_hadoop_conf(meta):
   <property><name>fs.default.name</name><value>hdfs://{private_ip_address}:8020</value></property>
   <property><name>heartbeat.recheck.interval</name><value>20</value></property>
 
-  <property><name>fs.s3.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
   <property><name>fs.s3n.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
   <property><name>fs.s3n.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
   <property><name>fs.s3n.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
+
+  <property><name>fs.s3.impl</name><value>org.apache.hadoop.fs.s3.S3FileSystem</value></property>
   <property><name>fs.s3.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
   <property><name>fs.s3.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
 
