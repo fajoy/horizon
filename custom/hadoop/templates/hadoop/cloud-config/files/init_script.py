@@ -221,7 +221,7 @@ def install_hadoop_conf(meta):
 """<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property><name>fs.default.name</name><value>hdfs://{private_ip_address}:8020</value></property>
+  <property><name>fs.default.name</name><value>hdfs://{HADOOP_MASTER_NAME}:8020</value></property>
   <property><name>heartbeat.recheck.interval</name><value>20</value></property>
 
   <property><name>fs.s3n.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
