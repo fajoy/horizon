@@ -280,7 +280,7 @@ def install_hadoop_conf(meta):
   <property><name>mapreduce.jobtracker.staging.root.dir</name> <value>/user</value></property>
   <property><name>mapred.job.tracker.handler.count</name><value>64</value></property>
 
-  <property><name>mapred.job.tracker</name><value>{private_ip_address}:9001</value></property>
+  <property><name>mapred.job.tracker</name><value>{HADOOP_MASTER_NAME}:9001</value></property>
   <property><name>mapred.job.tracker.http.address</name><value>0.0.0.0:50030</value></property>
 
   <property><name>mapred.task.tracker.http.address</name><value>0.0.0.0:50060</value></property>
@@ -311,17 +311,7 @@ def install_hadoop_conf(meta):
 -->
 </configuration>
 """}
-    kwargs = {}
-    while True: 
-        kwargs = get_obj_meta_data(dict(HADOOP_GROUP_ID=meta["HADOOP_GROUP_ID"],
-                                    uuid=meta["HADOOP_MASTER_ID"]))
-        if kwargs.get('private_ip_address',None):
-            break
-        time.sleep(1)
-    kwargs["cpu_count"]=multiprocessing.cpu_count()
-    kwargs["map_count"]=multiprocessing.cpu_count()*2
-    kwargs["reduce_count"]=multiprocessing.cpu_count()
-    conf=strings_format(conf_template,kwargs)
+    conf=strings_format(conf_template,meta)
     for fn in conf:
         with open(fn,'w') as fd:
             fd.write(conf[fn])
@@ -364,6 +354,9 @@ if __name__ == "__main__":
     meta.update(get_obj_meta_data(meta))
     meta.update(get_ec2_meta_data())
     instance_id=meta["uuid"]
+    meta["cpu_count"]=multiprocessing.cpu_count()
+    meta["map_count"]=multiprocessing.cpu_count()*2
+    meta["reduce_count"]=multiprocessing.cpu_count()
     update_obj_meta_data(meta)
     update_file_meta_data(meta)
     update_hostname(meta)

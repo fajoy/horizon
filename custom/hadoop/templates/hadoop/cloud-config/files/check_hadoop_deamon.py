@@ -47,5 +47,9 @@ if __name__ == "__main__":
     if not meta:
         exit(0)
 
+    jps = subprocess.check_output("jps" ,env=os.environ)
+    if  jps.find("Child")>0:
+        exit(0)
+
     api.update_hosts(meta)
     run_hadoop_deamon(meta)
