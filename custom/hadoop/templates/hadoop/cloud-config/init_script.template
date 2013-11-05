@@ -72,10 +72,10 @@ s3service.s3-endpoint-http-port=80
 s3service.s3-endpoint-https-port=443
 s3service.disable-dns-buckets=true
 s3service.internal-error-retry-max=5
-httpclient.retry-max=500
-httpclient.connection-timeout-ms=600000
-httpclient.socket-timeout-ms=6000000
-httpclient.max-connections=10000
+httpclient.retry-max=5
+httpclient.connection-timeout-ms=60000
+httpclient.socket-timeout-ms=60000
+httpclient.max-connections=65535
 EOF
 zip -r /usr/lib/hadoop/hadoop-core-*.jar . -i jets3t.properties
 hadoop fs -get s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@custom-$OS_TENANT_ID/.hadoop/$HADOOP_GROUP_ID/init_script.zip /root/init_script.zip
