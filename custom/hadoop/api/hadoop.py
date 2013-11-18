@@ -223,8 +223,8 @@ def make_init_script_object(request,group_id,context):
             template = 'project/access_and_security/api_access/ec2rc.sh.template'
             archive.writestr('.eucarc', render_to_string(template, context))
 
-            start_path="custom/hadoop/templates/hadoop/cloud-config/"
-            files_path="custom/hadoop/templates/hadoop/cloud-config/files/"
+            start_path=os.path.abspath(os.path.join(os.path.dirname(__file__),"../templates/hadoop/cloud-config/"))
+            files_path=os.path.abspath(os.path.join(os.path.dirname(__file__),"../templates/hadoop/cloud-config/files"))
             for directory,dirnames,filenames in os.walk(files_path):
                 for filename in filenames:
                     filepath=directory+"/"+filename
