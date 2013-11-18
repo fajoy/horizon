@@ -56,6 +56,28 @@
     #session time 2 hour
     SESSION_COOKIE_AGE = 7200
 
+* Apache WSGI Module 設定範例 ::
+
+    <VirtualHost *:80>
+      ServerAdmin <ServerAdmin@mail.com>
+      ServerName <ServerName>
+    
+      LogLevel warn
+      ErrorLog  ${APACHE_LOG_DIR}/horizon.error.log
+      CustomLog ${APACHE_LOG_DIR}/horizon.access.log combined
+      #ref https://code.google.com/p/modwsgi/wiki/VirtualEnvironments
+      WSGIScriptAlias / /var/www/horizon/openstack_dashboard/wsgi/django.wsgi
+      WSGIDaemonProcess horizon user=www-data group=www-data processes=3 threads=10 \
+        python-path=/var/www/horizon/.venv/lib/python2.7/site-packages
+      WSGIProcessGroup horizon
+      Alias /static /var/www/horizon/static
+      SetEnv OS_CACHE True
+      <Directory /var/www/horizon/openstack_dashboard/wsgi>
+         Order allow,deny
+         Allow from all
+      </Directory>
+    </VirtualHost>
+
 
 Custom Hadoop Ubuntu Cloud QCOW2 Image 製作 
 ------------
