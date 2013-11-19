@@ -22,6 +22,11 @@ def run_master_deamon(meta):
         subprocess.check_call("hadoop jobtracker &",stdout=fd,stderr=fd, shell=True )
 
 def run_slave_deamon(meta):
+    hosts = open("/etc/hosts",'r').read()
+    master_name=os.environ["HADOOP_MASTER_NAME"]
+    if hosts.find(master_name):
+        os.exit(0)
+
     jps = subprocess.check_output("jps" ,env=os.environ)
     if  jps.find("DataNode")<0:
         print "Starting DataNode"
