@@ -281,6 +281,7 @@ def install_hadoop_conf(meta):
   <property><name>dfs.datanode.du.reserved</name><value>536870912</value></property>
   <property><name>io.file.buffer.size</name><value>65536</value></property>
   <property><name>dfs.block.size</name><value>134217728</value></property>
+  <property><name>dfs.permissions</name><value>false</value></property>
 
 </configuration>
 """,

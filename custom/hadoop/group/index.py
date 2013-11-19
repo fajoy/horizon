@@ -107,7 +107,7 @@ class SetAccessControlsAction(workflows.Action):
             regex=validators.password_validator(),
             error_messages={'invalid': validators.password_validator_msg()})
     confirm_admin_pass = forms.CharField(
-            label=_("Confirm Root Pass"),
+            label=_("Confirm Root Password"),
             required=False,
             widget=forms.PasswordInput(render_value=False))
     groups = forms.MultipleChoiceField(label=_("Security Groups"),
