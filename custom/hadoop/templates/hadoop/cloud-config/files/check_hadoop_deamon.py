@@ -5,36 +5,39 @@ import os
 import sys
 from multiprocessing import Process
 import multiprocessing
-from boto.s3.key import Key
+import logging
+
+logging.basicConfig(stream=sys.stdout,level=logging.INFO,format="%(asctime)s: %(levelname)s: %(message)s")
+log = logging.getLogger(__name__)
 
 def run_master_deamon(meta):
     if not os.path.exists("/tmp/hadoop-root/dfs/name"):
         subprocess.check_call("/usr/bin/hadoop namenode -format",stdout=sys.stdout,stderr=sys.stderr, shell=True ,env=os.environ)
     jps = subprocess.check_output("jps" ,env=os.environ)
     if  jps.find("NameNode")<0:
-        print "Starting NameNode"
+        log.info("Starting NameNode")
         fd =  open("/root/log/namenode.log","a+")
         subprocess.check_call("hadoop namenode &",stdout=fd,stderr=fd, shell=True )
 
     if  jps.find("JobTracker")<0:
-        print "Starting JobTracker"
+        log.info("Starting JobTracker")
         fd =  open("/root/log/jobtracker.log","a+")
         subprocess.check_call("hadoop jobtracker &",stdout=fd,stderr=fd, shell=True )
 
 def run_slave_deamon(meta):
     hosts = open("/etc/hosts",'r').read()
     master_name=os.environ["HADOOP_MASTER_NAME"]
-    if hosts.find(master_name):
-        os.exit(0)
+    if hosts.find(master_name)<0:
+        exit(0)
 
     jps = subprocess.check_output("jps" ,env=os.environ)
     if  jps.find("DataNode")<0:
-        print "Starting DataNode"
+        log.info("Starting DataNode")
         fd =  open("/root/log/datanode.log","a+")
         subprocess.check_call("hadoop datanode &",stdout=fd,stderr=fd, shell=True )
 
     if  jps.find("TaskTracker")<0:
-        print "Starting TaskTracker"
+        log.info("Starting TaskTracker")
         fd =  open("/root/log/tasktracker.log","a+")
         subprocess.check_call("hadoop tasktracker &",stdout=fd,stderr=fd, shell=True )
 

@@ -165,7 +165,7 @@ def update_file_from_obj(key,filename):
         return
     if not os.path.exists(os.path.dirname(filename)):
         os.makedirs(os.path.dirname(filename))
-
+    log.info("update file '%s'"%filename)
     k.get_contents_to_filename(filename)
 
 def update_obj_from_file(key,filename):
