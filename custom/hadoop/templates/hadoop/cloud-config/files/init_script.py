@@ -245,8 +245,11 @@ def install_hadoop_conf(meta):
 
   <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
 
+  <property><name>hadoop.tmp.dir</name><value>/tmp/hadoop-${{user.name}}</value></property>
   <property><name>fs.s3.block.size</name><value>67108864</value></property>
   <property><name>fs.s3n.block.size</name><value>67108864</value></property>
+  <property><name>fs.s3.buffer.dir</name><value>${{hadoop.tmp.dir}}/s3</value></property>
+
   <property><name>fs.local.block.size</name><value>67108864</value></property>
   <property><name>io.file.buffer.size</name><value>65536</value></property>
 
@@ -284,9 +287,7 @@ def install_hadoop_conf(meta):
 "/etc/hadoop/conf/mapred-site.xml":
 """<?xml version="1.0"?>
 <configuration>
-  <property><name>hadoop.job.history.user.location</name><value></value></property>
-
-  <property><name>mapreduce.jobtracker.staging.root.dir</name> <value>/user</value></property>
+  <property><name>mapreduce.jobtracker.staging.root.dir</name><value>/user</value></property>
   <property><name>mapred.job.tracker.handler.count</name><value>64</value></property>
 
   <property><name>mapred.job.tracker</name><value>{HADOOP_MASTER_NAME}:9001</value></property>
@@ -313,6 +314,7 @@ def install_hadoop_conf(meta):
   <property><name>mapred.tasktracker.indexcache.mb</name><value>10</value></property>
 
 <!--
+  <property><name>hadoop.job.history.user.location</name><value></value></property>
   <property><name>mapred.reduce.tasks</name><value>7</value></property>
   <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
 
