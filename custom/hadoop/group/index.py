@@ -3,6 +3,7 @@ from django.core.urlresolvers import reverse
 from django.core.urlresolvers import resolve
 from django.core import urlresolvers
 from django import template
+from django.template import Context, Template
 from django.utils.http import urlencode
 from django import shortcuts
 from django.core.cache import cache
@@ -22,6 +23,9 @@ from openstack_dashboard.dashboards.project.instances.tables import  POWER_STATE
 from openstack_dashboard.dashboards.project.access_and_security.floating_ips.workflows import IPAssociationWorkflow
 from openstack_dashboard.usage import quotas
 from openstack_dashboard import api
+from openstack_dashboard.api import network
+from openstack_dashboard.api import nova
+
 
 from contextlib import closing
 import tempfile
@@ -230,6 +234,25 @@ def get_full_flavor(request,flavor_id):
     cache.set(key,ret,1800)
     return ret
 
+def get_floating_ip(request ,instance_id):
+    key = "floating-ips-%s"%( request.user.tenant_id , )
+    return cache.get(key,{}).get(instance_id,None)
+
+def get_floating_ips_list(request):
+    try:
+        floating_ips = network.tenant_floating_ip_list(request)
+    except:
+        floating_ips = []
+
+    for ip in floating_ips :
+        if not ip.instance_id:
+            continue
+
+    ips = dict([(ip.instance_id,ip.ip) for ip in floating_ips if ip.instance_id ])
+    key = "floating-ips-%s"%( request.user.tenant_id , )
+    cache.set(key,ips,300)
+    return ips
+
 class UpdateRow(tables.Row):
     ajax = True
     def get_data(self, request,instance_id):
@@ -239,6 +262,19 @@ class UpdateRow(tables.Row):
             instance = api.nova.server_get(request, instance_id)
             datum['full_flavor'] = get_full_flavor(request,instance.flavor["id"])
             datum['instance'] = instance
+            datum['float_ip'] = get_floating_ip(request,instance_id)
+            if datum.get('float_ip',None):
+                if datum.get('HADOOP_TYPE',None) == "master":
+                    datum['service_link']="""
+<li><a href="http://{float_ip}:50070/">NameNode</a></li>
+<li><a href="http://{float_ip}:50030/">JobTracker</a></li>
+""".format(**datum)
+                if datum.get('HADOOP_TYPE',None) == "slave":
+                    datum['service_link']="""
+<li><a href="http://{float_ip}:50075/browseDirectory.jsp?dir=%2F">DataNode</a></li>
+<li><a href="http://{float_ip}:50060/">TaskTracker</a></li>
+""".format(**datum)
+
             datum['state'] = POWER_STATES.get(getattr(instance, "OS-EXT-STS:power_state", 0), '')
 
         except:
@@ -332,10 +368,33 @@ class Table(tables.DataTable):
 
 
     def get_ips(datum):
-        if datum.get('instance',None):
-            template_name = 'project/instances/_instance_ips.html'
-            return template.loader.render_to_string(template_name, datum)
-        return '-'
+        if not datum.get('instance',None):
+            return '-'
+
+        t=Template("""
+{% for ip_group, addresses in instance.addresses.items %}
+    {% if instance.addresses.items|length > 1 %}
+    <h4>{{ ip_group }}</h4>
+    {% endif %}
+    <ul>
+    {% for address in addresses %}
+      <li>{{ address.addr }}</li>
+    {% endfor %}
+    </ul>
+    {% if service_link %}
+      {{ service_link | safe }}
+    {% endif %}
+{% endfor %}
+""")
+        #template_name = 'project/instances/_instance_ips.html'
+        #return template.loader.render_to_string(template_name, datum)
+        return t.render(Context(datum))
+
+    def get_type(datum):
+        return datum.get('HADOOP_TYPE','-')
+    hadoop_type = tables.Column(get_type,
+                         verbose_name=_("Type"),
+                         )
 
     ip = tables.Column(get_ips,
                        verbose_name=_("IP Address"),
@@ -349,10 +408,10 @@ class Table(tables.DataTable):
                          attrs={'data-type': 'size'})
     def get_init(datum):
         if not datum.get("instance",None):
-            return  "-"
+            return "-"
         if datum.get("private_ip_address",None):
             return  "ok"
-        return  "installing"
+        return "installing"
         
 
     def disable_column_link(self):
@@ -378,5 +437,6 @@ class GroupView(tables.DataTableView):
     template_name = 'custom/hadoop/tables.html'
     def get_data(self):
         request = self.request
+        get_floating_ips_list(self.request)
         return hadoop.get_instance_list(request,self.kwargs['group_id'])
 
