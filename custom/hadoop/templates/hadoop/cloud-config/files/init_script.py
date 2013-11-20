@@ -246,10 +246,11 @@ def install_hadoop_conf(meta):
   <property><name>io.compression.codecs</name><value>org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.BZip2Codec,org.apache.hadoop.io.compress.SnappyCodec</value></property>
 
   <property><name>hadoop.tmp.dir</name><value>/tmp/hadoop-${{user.name}}</value></property>
-  <property><name>fs.s3.block.size</name><value>67108864</value></property>
-  <property><name>fs.s3n.block.size</name><value>67108864</value></property>
   <property><name>fs.s3.buffer.dir</name><value>${{hadoop.tmp.dir}}/s3</value></property>
 
+  <property><name>dfs.block.size</name><value>134217728</value></property>
+  <property><name>fs.s3.block.size</name><value>67108864</value></property>
+  <property><name>fs.s3n.block.size</name><value>67108864</value></property>
   <property><name>fs.local.block.size</name><value>67108864</value></property>
   <property><name>io.file.buffer.size</name><value>65536</value></property>
 
@@ -264,6 +265,9 @@ def install_hadoop_conf(meta):
 """<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
+  <property><name>dfs.name.dir</name><value>${{hadoop.tmp.dir}}/dfs/name</value></property>
+  <property><name>dfs.data.dir</name><value>${{hadoop.tmp.dir}}/dfs/data</value></property>
+
   <property><name>dfs.datanode.https.address</name><value>0.0.0.0:50475</value></property>
   <property><name>dfs.secondary.http.address</name><value>0.0.0.0:50090</value></property>
   <property><name>dfs.http.address</name><value>0.0.0.0:50070</value></property>
@@ -272,23 +276,20 @@ def install_hadoop_conf(meta):
   <property><name>dfs.datanode.address</name><value>0.0.0.0:50010</value></property>
   <property><name>dfs.datanode.ipc.address</name><value>0.0.0.0:50020</value></property>
 
-  <property><name>dfs.name.dir</name><value>${{hadoop.tmp.dir}}/dfs/name</value></property>
-  <property><name>dfs.data.dir</name><value>${{hadoop.tmp.dir}}/dfs/data</value></property>
   <property><name>dfs.replication</name><value>1</value></property>
 
   <property><name>dfs.namenode.handler.count</name><value>64</value></property>
   <property><name>dfs.datanode.max.xcievers</name><value>4096</value></property>
   <property><name>dfs.datanode.du.reserved</name><value>536870912</value></property>
-  <property><name>io.file.buffer.size</name><value>65536</value></property>
-  <property><name>dfs.block.size</name><value>134217728</value></property>
   <property><name>dfs.permissions</name><value>false</value></property>
-
 </configuration>
 """,
 "/etc/hadoop/conf/mapred-site.xml":
 """<?xml version="1.0"?>
 <configuration>
   <property><name>mapreduce.jobtracker.staging.root.dir</name><value>/user</value></property>
+  <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
+
   <property><name>mapred.job.tracker.handler.count</name><value>64</value></property>
 
   <property><name>mapred.job.tracker</name><value>{HADOOP_MASTER_NAME}:9001</value></property>
@@ -300,7 +301,6 @@ def install_hadoop_conf(meta):
 
   <property><name>mapred.job.reuse.jvm.num.tasks</name><value>20</value></property>
 
-  <property><name>mapred.local.dir</name><value>${{hadoop.tmp.dir}}/mapred/local</value></property>
   <property><name>mapred.reduce.tasks.speculative.execution</name><value>true</value></property>
 
   <property><name>mapred.map.output.compression.codec</name><value>org.apache.hadoop.io.compress.SnappyCodec</value></property>

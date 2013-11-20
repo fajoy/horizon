@@ -11,18 +11,18 @@ logging.basicConfig(stream=sys.stdout,level=logging.INFO,format="%(asctime)s: %(
 log = logging.getLogger(__name__)
 
 def run_master_deamon(meta):
-    if not os.path.exists("/tmp/hadoop-root/dfs/name"):
-        subprocess.check_call("/usr/bin/hadoop namenode -format",stdout=sys.stdout,stderr=sys.stderr, shell=True ,env=os.environ)
+    if not os.path.exists("/tmp/hadoop-hdfs/dfs/name"):
+        subprocess.check_call("su - hdfs -c '/usr/bin/hadoop namenode -format'",stdout=sys.stdout,stderr=sys.stderr, shell=True ,env=os.environ)
     jps = subprocess.check_output("jps" ,env=os.environ)
     if  jps.find("NameNode")<0:
         log.info("Starting NameNode")
         fd =  open("/root/log/namenode.log","a+")
-        subprocess.check_call("hadoop namenode &",stdout=fd,stderr=fd, shell=True )
+        subprocess.check_call("su - hdfs hadoop namenode &",stdout=fd,stderr=fd, shell=True )
 
     if  jps.find("JobTracker")<0:
         log.info("Starting JobTracker")
         fd =  open("/root/log/jobtracker.log","a+")
-        subprocess.check_call("hadoop jobtracker &",stdout=fd,stderr=fd, shell=True )
+        subprocess.check_call("su - mapred hadoop jobtracker &",stdout=fd,stderr=fd, shell=True )
 
 def run_slave_deamon(meta):
     hosts = open("/etc/hosts",'r').read()
@@ -34,12 +34,12 @@ def run_slave_deamon(meta):
     if  jps.find("DataNode")<0:
         log.info("Starting DataNode")
         fd =  open("/root/log/datanode.log","a+")
-        subprocess.check_call("hadoop datanode &",stdout=fd,stderr=fd, shell=True )
+        subprocess.check_call("su - hdfs hadoop datanode &",stdout=fd,stderr=fd, shell=True )
 
     if  jps.find("TaskTracker")<0:
         log.info("Starting TaskTracker")
         fd =  open("/root/log/tasktracker.log","a+")
-        subprocess.check_call("hadoop tasktracker &",stdout=fd,stderr=fd, shell=True )
+        subprocess.check_call("su - mapred hadoop tasktracker &",stdout=fd,stderr=fd, shell=True )
 
 def run_hadoop_deamon(meta):
     if not os.path.exists("/root/log"):
