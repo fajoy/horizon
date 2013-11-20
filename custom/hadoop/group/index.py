@@ -31,7 +31,6 @@ import json
 from ...hadoop.api import hadoop
 
 class SetSlaveDetailsAction(workflows.Action):
-    source_id = forms.ChoiceField(label=_("Image"), required=True)
     flavor = forms.ChoiceField(label=_("Slave Instance Flavor"),
                                help_text=_("Size of image to launch."))
 
@@ -48,26 +47,6 @@ class SetSlaveDetailsAction(workflows.Action):
     def clean(self):
         cleaned_data = super(SetSlaveDetailsAction, self).clean()
         return cleaned_data
-
-    def _init_images_cache(self):
-        if not hasattr(self, '_images_cache'):
-            self._images_cache = {}
-
-    def populate_source_id_choices(self, request, context):
-        self._init_images_cache()
-        images = get_available_images(request, context.get('project_id'),
-                                      self._images_cache)
-        choices = [(image.id, image.name)
-                   for image in images
-                   if image.properties.get("image_type", '') != "snapshot" 
-                      and str(image.id) in hadoop.get_image_list(request)]  
-        if choices:
-            if len(choices) == 1:
-                self.fields['source_id'].initial = choices[0][0]
-            choices.insert(0, ("", _("Select Image")))
-        else:
-            choices.insert(0, ("", _("No images available.")))
-        return choices
 
     def populate_flavor_choices(self, request, context):
         try:
@@ -159,25 +138,11 @@ class SetAccessControlsAction(workflows.Action):
 
 class SetSlaveDetails(workflows.Step):
     action_class = SetSlaveDetailsAction
-    contributes = ( "source_id",  "flavor", "count",)
+    contributes = ( "flavor", "count",)
     class Meta:
         name = _("Details")
         help_text_template = ("project/instances/"
                               "_launch_details_help.html")
-
-class SetAccessControls(workflows.Step):
-    action_class = SetAccessControlsAction
-    contributes = ("keypair_id", "security_group_ids",
-            "admin_pass", "confirm_admin_pass")
-
-    def contribute(self, data, context):
-        if data:
-            post = self.workflow.request.POST
-            context['security_group_ids'] = post.getlist("groups")
-            context['keypair_id'] = data.get("keypair", "")
-            context['admin_pass'] = data.get("admin_pass", "")
-            context['confirm_admin_pass'] = data.get("confirm_admin_pass", "")
-        return context
 
 class CreateSlaveWorkflow(workflows.Workflow):
     slug = "create_group"
@@ -188,7 +153,6 @@ class CreateSlaveWorkflow(workflows.Workflow):
     success_url = "horizon:custom:hadoop:index"
     default_steps = (
                      SetSlaveDetails,
-                     SetAccessControls,
                     )
 
     def format_status_message(self, message):

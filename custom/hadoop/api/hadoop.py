@@ -13,7 +13,7 @@ import uuid
 import json
 import tempfile
 import zipfile
-import random
+import crypt, random, string
 from openstack_dashboard.api.nova import novaclient , Server
 from novaclient.v1_1 import client as nova_client
 
@@ -24,6 +24,13 @@ CUSTOM_HADOOP_PREFIX =  getattr(settings,"CUSTOM_HADOOP_PREFIX" , ".hadoop/" )
 CUSTOM_HADOOP_S3_HOST = getattr(settings,"CUSTOM_HADOOP_S3_HOST" , "" )
 
 
+
+def get_salt(chars = string.letters + string.digits,size=8):
+    return ''.join([random.choice(chars) for _x in xrange(size)])
+
+def get_shadow_pass(pw):
+    return crypt.crypt(pw,"$6$"+get_salt())
+    
 def generate_uid(topic, size=8):
     characters = '01234567890abcdefghijklmnopqrstuvwxyz'
     choices = [random.choice(characters) for _x in xrange(size)]
@@ -269,9 +276,11 @@ def create_master(request,context):
         data["s3_host"]=CUSTOM_HADOOP_S3_HOST
         make_init_script_object(request,hadoop_group_id,data)
         template = 'custom/hadoop/cloud-config/init_script.template'
+        data["reservation_id"] = hadoop_group_id
+        data['admin_shadow_pass'] = data['admin_pass'] and get_shadow_pass(data['admin_pass'])
         custom_script = render_to_string(template,data)
+
         meta={}
-        data["reservation_id"]= hadoop_group_id
         try:
             instance = Server(novaclient(request).servers.create(
                                    data["hadoop_master_name"],
@@ -279,13 +288,12 @@ def create_master(request,context):
                                    data['flavor'],
                                    key_name=data['keypair_id'],
                                    userdata= normalize_newlines(custom_script),
-                                   security_groups=context['security_group_ids'],
+                                   security_groups=data['security_group_ids'],
                                    block_device_mapping = dev_mapping,
                                    reservation_id=data["reservation_id"],
                                    meta=meta,
                                    nics=nics,
                                    min_count = 1,
-                                   admin_pass=data['admin_pass'],
                                     ), request)
             instance = api.nova.server_get(request, instance.id)
             instance_meta=  dict(((attr,getattr(instance,attr,None))  for attr in instance._attrs))
@@ -298,9 +306,7 @@ def create_master(request,context):
 
             data["hadoop_master_id"] = instance.id
             del  data["flavor"]
-            del  data["keypair_id"]
             del  data["confirm_admin_pass"]
-            del  data['security_group_ids']
             del  data["admin_pass"]
             save_group_meta(request,data)
         except:
@@ -334,7 +340,6 @@ def _create_slave(request,data):
                                    meta=meta,
                                    nics=nics,
                                    min_count = 1,
-                                   admin_pass=data['admin_pass'],
                                     ), request)
 
 
