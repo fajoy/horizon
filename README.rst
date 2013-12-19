@@ -3,13 +3,16 @@
 =============================
 * Ubuntu 12.04套件需求 ::
 
-    apt-get install git gcc python-virtualenv  python-dev nodejs libxml2-dev libxslt-dev
+    apt-get install git gcc python-virtualenv  python-dev nodejs libxml2-dev libxslt-dev libssl-dev python-lesscpy
+
+
 
 * 下載安裝 ::
 
     git clone https://github.com/fajoy/horizon.git    
     cd horizon
     cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
+    cp -r openstack_dashboard/static/* static/
     ./run_tests.sh
     tools/with_venv.sh pip install --upgrade -r /var/www/horizon/requirements.txt
 
@@ -23,22 +26,12 @@
     CUSTOM_HADOOP_IMAGE_LIST=["d759863b-c219-4513-8963-b98dc055177f" ,]
     CUSTOM_HADOOP_S3_HOST = "s3.nctu.edu.tw"
     OPENSTACK_HOST = "openstack-grizzly.it.nctu.edu.tw"
-    INSTALLED_APPS = (
-        'openstack_dashboard',
-        'django.contrib.contenttypes',
-        'django.contrib.auth',
-        'django.contrib.sessions',
-        'django.contrib.messages',
-        'django.contrib.staticfiles',
-        'django.contrib.humanize',
-        'compressor',
-        'horizon',
-        'openstack_dashboard.dashboards.project',
-        'openstack_dashboard.dashboards.admin',
-        'openstack_dashboard.dashboards.settings',
-        'openstack_auth',
-        'custom',
-    )
+    from openstack_dashboard.local_settings import INSTALLED_APPS
+    INSTALLED_APPS.extend((
+        'custom'  ,
+    ))
+
+
     
 * 不需DEBUG 可修改為 ::
 
