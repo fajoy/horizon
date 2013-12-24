@@ -3,9 +3,11 @@ from django.utils.translation import ugettext_lazy as _
 from django import shortcuts
 
 from openstack_dashboard import api
-from openstack_dashboard.api.keystone import keystoneclient
+from openstack_dashboard.api.keystone import keystoneclient,ec2_manager
 from horizon import tables
 from horizon import messages
+from openstack_auth import backend
+
 
 class CreateEC2Key(tables.Action):
     name = "Create"
@@ -17,8 +19,8 @@ class CreateEC2Key(tables.Action):
         user_id=request.user.id
         tenant_id=request.user.tenant_id
         try:
-            ec2=api.keystone.create_ec2_credentials(request,user_id,tenant_id)
-            messages.success(request,"Create Success : %s"%ec2.access)
+            credential = api.keystone.create_ec2_credentials(request,user_id,tenant_id)
+            messages.success(request,"Create Success : %s"% credential.access)
             return shortcuts.redirect(self.get_success_url(request))
         except:
             messages.error(request,"Create Error")
@@ -34,13 +36,12 @@ class DeleteEC2Key(tables.DeleteAction):
     data_type_plural = _("EC2 Key")
 
     def delete(self, request, obj_id):
-        access=obj_id
+        access = obj_id
         user_id=request.user.id
-
         try:
-            keystoneclient(request).ec2.delete(user_id,access)
+            ec2_manager(request).delete(user_id,access)
         except:
-            messages.error(request,"Create Error")
+            messages.error(request,"Delete Error")
 
 class _Table(tables.DataTable):
     access = tables.Column("access",verbose_name="Access")
