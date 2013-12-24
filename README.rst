@@ -17,8 +17,6 @@
     tools/with_venv.sh pip install --upgrade -r /var/www/horizon/requirements.txt
 
 
-目前因有修改swift api 的部分,因此會有test error出現,但不影響執行運作.
-
 * 加入模組
 
 編輯 openstack_dashboard/local/local_settings.py ::
@@ -26,11 +24,10 @@
     CUSTOM_HADOOP_IMAGE_LIST=["d759863b-c219-4513-8963-b98dc055177f" ,]
     CUSTOM_HADOOP_S3_HOST = "s3.nctu.edu.tw"
     OPENSTACK_HOST = "openstack-grizzly.it.nctu.edu.tw"
-    from openstack_dashboard.local_settings import INSTALLED_APPS
-    INSTALLED_APPS.extend((
+    from openstack_dashboard.settings import INSTALLED_APPS
+    INSTALLED_APPS += (
         'custom'  ,
-    ))
-
+    )
 
     
 * 不需DEBUG 可修改為 ::
@@ -164,21 +161,6 @@ For blueprints and feature specifications:
 For issue tracking:
 
  * https://bugs.launchpad.net/horizon
-
-Dependencies
-============
-
-To get started you will need to install Node.js (http://nodejs.org/) on your
-machine. Node.js is used with Horizon in order to use LESS
-(http://lesscss.org/) for our CSS needs. Horizon is currently using Node.js
-v0.6.12.
-
-For Ubuntu use apt to install Node.js::
-
-    $ sudo apt-get install nodejs
-
-For other versions of Linux, please see here:: http://nodejs.org/#download for
-how to install Node.js on your system.
 
 
 Getting Started
