@@ -3,7 +3,7 @@
 =============================
 * Ubuntu 12.04套件需求 ::
 
-    apt-get install git gcc python-virtualenv  python-dev nodejs libxml2-dev libxslt-dev libssl-dev python-lesscpy
+    apt-get install git gcc python-virtualenv  python-dev nodejs libxml2-dev libxslt1-dev libssl-dev 
 
 
 
@@ -12,9 +12,10 @@
     git clone https://github.com/fajoy/horizon.git    
     cd horizon
     cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
-    cp -r openstack_dashboard/static/* static/
+    cp -r openstack_dashboard/static/. static
     ./run_tests.sh
-    tools/with_venv.sh pip install --upgrade -r /var/www/horizon/requirements.txt
+    y
+    tools/with_venv.sh pip install --upgrade -r requirements.txt
 
 
 * 加入模組
