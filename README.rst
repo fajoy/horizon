@@ -37,6 +37,7 @@
     TEMPLATE_DEBUG = False
     PROD = True
     USE_SSL = False
+    ALLOWED_HOSTS = ['*', ]
 
 
 * 啟動測試 ::
