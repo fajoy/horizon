@@ -45,7 +45,7 @@ class JobAction(workflows.Action):
         return True
 
     def get_help_text(self, extra_context=None):
-        return """Input job name and Stdout amd Stderr update interval seccond second."""
+        return """Input job name and Stdout and Stderr update interval seccond second."""
 
         
 class JobStep(workflows.Step):
@@ -357,8 +357,8 @@ class StreamingArgsAction(workflows.Action):
                      required=True,
                      help_text=escape("ex: &lt;bucket_name&gt;/reducer.py"), )
 
-    extea_args = forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px;' }),
-                            label=_("Extea Arguments (Option)"),
+    extra_args = forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px;' }),
+                            label=_("Extra Arguments (Option)"),
                             required=False,
                             help_text=escape("ex: -numReduceTasks [num] ... etc."), )
 
