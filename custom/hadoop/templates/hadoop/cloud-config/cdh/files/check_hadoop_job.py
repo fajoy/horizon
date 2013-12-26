@@ -76,8 +76,8 @@ def handle_jar(obj):
     
     with open(script_path,'a+') as sh:
         cmd = """#!/bin/bash
-echo hadoop fs -get s3n://{jar_location} {jar_filepath} >&2
-hadoop fs -get s3n://{jar_location} {jar_filepath} 
+echo hadoop fs -get {jar_location} {jar_filepath} >&2
+hadoop fs -get {jar_location} {jar_filepath} 
 
 echo hadoop jar {jar_filepath} {jar_args} >&2
 hadoop jar {jar_filepath} {jar_args} 
@@ -106,7 +106,7 @@ def handle_streaming(obj):
     os.chdir(dir_path)
     with open("/root/job/{id}/obj".format(**obj),"w") as fd:
         fd.write(json.dumps(obj))
-    obj["jar_filename"] = "/usr/share/hadoop/contrib/streaming/hadoop-streaming*.jar"
+    obj["jar_filename"] = "/usr/lib/hadoop-*-mapreduce/contrib/streaming/hadoop-streaming-*.jar"
     obj["mapper_filename"] = os.path.basename(obj["mapper"])
     obj["reducer_filename"] = os.path.basename(obj["reducer"])
     obj["jar_filepath"] = "/root/job/{id}/work/{jar_filename}".format(**obj)
@@ -114,18 +114,14 @@ def handle_streaming(obj):
     script_path= "/root/job/{id}/run.sh".format(**obj)
     with open(script_path,'a+') as sh:
         cmd = """#!/bin/bash
-echo hadoop fs -get s3n://{mapper} ./ >&2
-hadoop fs -get s3n://{mapper} ./
+echo hadoop fs -get {mapper} ./ >&2
+hadoop fs -get {mapper} ./
 
-echo hadoop fs -get s3n://{reducer} ./ >&2
-hadoop fs -get s3n://{reducer} ./
+echo hadoop fs -get {reducer} ./ >&2
+hadoop fs -get {reducer} ./
 
-
-echo hadoop jar {jar_filename} {extra_args} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}  {extra_args} >&2
-hadoop jar {jar_filename} {extra_args} -input s3n://{input_location} -output s3n://{output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}
-
-echo hadoop job -history  s3n://{output_location} >&2
-hadoop job -history  s3n://{output_location} 
+echo hadoop jar {jar_filename} {extra_args} -input {input_location} -output {output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}  {extra_args} >&2
+hadoop jar {jar_filename} {extra_args} -input {input_location} -output {output_location} -mapper {mapper_filename} -reducer {reducer_filename} -file {mapper_filename}  -file {reducer_filename}
 """.format(**obj)
         sh.write(cmd)
 

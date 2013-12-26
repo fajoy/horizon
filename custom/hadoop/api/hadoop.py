@@ -19,7 +19,8 @@ from novaclient.v1_1 import client as nova_client
 
 
 CUSTOM_CONTAINER_NAME = getattr(settings,"CUSTOM_CONTAINER_NAME" , "custom-{user.tenant_id}" )
-CUSTOM_HADOOP_IMAGE_LIST = getattr(settings,"CUSTOM_HADOOP_IMAGE_LIST" , [] ) 
+CUSTOM_HADOOP_IMAGE_CONF = getattr(settings,"CUSTOM_HADOOP_IMAGE_CONF" , {} ) 
+CUSTOM_HADOOP_IMAGE_LIST = getattr(settings,"CUSTOM_HADOOP_IMAGE_LIST" , [] )
 CUSTOM_HADOOP_PREFIX =  getattr(settings,"CUSTOM_HADOOP_PREFIX" , ".hadoop/" ) 
 CUSTOM_HADOOP_S3_HOST = getattr(settings,"CUSTOM_HADOOP_S3_HOST" , "" )
 
@@ -229,9 +230,10 @@ def make_init_script_object(request,group_id,context):
             archive.writestr('cacert.pem', cacert.data)
             template = 'project/access_and_security/api_access/ec2rc.sh.template'
             archive.writestr('.eucarc', render_to_string(template, context))
-
-            start_path=os.path.abspath(os.path.join(os.path.dirname(__file__),"../templates/hadoop/cloud-config/"))
-            files_path=os.path.abspath(os.path.join(os.path.dirname(__file__),"../templates/hadoop/cloud-config/files"))
+            zip_root_path="../templates/hadoop/cloud-config/%s/" % (
+                CUSTOM_HADOOP_IMAGE_CONF.get( context.get('source_id') ,"default") ,)
+            start_path=os.path.abspath(os.path.join(os.path.dirname(__file__),zip_root_path ))
+            files_path=os.path.abspath(os.path.join(os.path.dirname(__file__), zip_root_path + "files"))
             for directory,dirnames,filenames in os.walk(files_path):
                 for filename in filenames:
                     filepath=directory+"/"+filename
@@ -275,7 +277,8 @@ def create_master(request,context):
         data["hadoop_master_name"]=context['name']+'-master'
         data["s3_host"]=CUSTOM_HADOOP_S3_HOST
         make_init_script_object(request,hadoop_group_id,data)
-        template = 'custom/hadoop/cloud-config/init_script.template'
+        template = 'custom/hadoop/cloud-config/%s/init_script.template' % (
+                CUSTOM_HADOOP_IMAGE_CONF.get( data['source_id'] ,"default") , ) 
         data["reservation_id"] = hadoop_group_id
         data['admin_shadow_pass'] = data['admin_pass'] and get_shadow_pass(data['admin_pass'])
         custom_script = render_to_string(template,data)
@@ -315,7 +318,8 @@ def create_master(request,context):
         return data
 
 def _create_slave(request,data):
-    template = 'custom/hadoop/cloud-config/init_script.template'
+    template = 'custom/hadoop/cloud-config/%s/init_script.template' %(
+                CUSTOM_HADOOP_IMAGE_CONF.get( data['source_id'] ,"default" ) ,)
     custom_script = render_to_string(template,data)
 
     dev_mapping = None

@@ -235,7 +235,7 @@ def install_hadoop_conf(meta):
   <property><name>fs.s3n.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
   <property><name>fs.s3n.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
 
-  <property><name>fs.s3.impl</name><value>org.apache.hadoop.fs.s3.S3FileSystem</value></property>
+  <property><name>fs.s3.impl</name><value>org.apache.hadoop.fs.s3native.NativeS3FileSystem</value></property>
   <property><name>fs.s3.awsAccessKeyId</name><value>{EC2_ACCESS_KEY}</value></property>
   <property><name>fs.s3.awsSecretAccessKey</name><value>{EC2_SECRET_KEY}</value></property>
 
@@ -250,7 +250,6 @@ def install_hadoop_conf(meta):
 
   <property><name>dfs.block.size</name><value>134217728</value></property>
   <property><name>fs.s3.block.size</name><value>67108864</value></property>
-  <property><name>fs.s3n.block.size</name><value>67108864</value></property>
   <property><name>fs.local.block.size</name><value>67108864</value></property>
   <property><name>io.file.buffer.size</name><value>65536</value></property>
 
@@ -265,8 +264,8 @@ def install_hadoop_conf(meta):
 """<?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property><name>dfs.name.dir</name><value>${{hadoop.tmp.dir}}/dfs/name</value></property>
-  <property><name>dfs.data.dir</name><value>${{hadoop.tmp.dir}}/dfs/data</value></property>
+  <property><name>dfs.name.dir</name><value>/var/lib/hadoop-hdfs/cache/hdfs/dfs/name</value></property>
+  <property><name>dfs.data.dir</name><value>/var/lib/hadoop-hdfs/cache/hdfs/dfs/data</value></property>
 
   <property><name>dfs.datanode.https.address</name><value>0.0.0.0:50475</value></property>
   <property><name>dfs.secondary.http.address</name><value>0.0.0.0:50090</value></property>
@@ -314,14 +313,14 @@ def install_hadoop_conf(meta):
   <property><name>tasktracker.http.threads</name><value>20</value></property>
   <property><name>mapred.tasktracker.indexcache.mb</name><value>10</value></property>
 
+
 <!--
   <property><name>hadoop.job.history.user.location</name><value></value></property>
   <property><name>mapred.reduce.tasks</name><value>7</value></property>
   <property><name>mapred.userlog.retain.hours</name><value>48</value></property>
-
-  <property><name>mapred.reduce.tasksperslot</name><value>1.75</value></property>
   <property><name>mapred.output.direct.NativeS3FileSystem</name><value>true</value></property>
   <property><name>mapred.output.committer.class</name><value>org.apache.hadoop.mapred.DirectFileOutputCommitter</value></property>
+  <property><name>mapred.reduce.tasksperslot</name><value>1.75</value></property>
 -->
 
 </configuration>

@@ -1,0 +1,93 @@
+Content-Type: multipart/mixed; boundary="=={{ hadoop_group_id }}=="
+MIME-Version: 1.0
+
+--=={{ hadoop_group_id }}==
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="0_cloud-init"
+
+#cloud-config
+#ref https://cloudinit.readthedocs.org/en/latest/topics/examples.html
+
+apt_mirror: http://ubuntu.cs.nctu.edu.tw/ubuntu/
+repo_update: false
+
+ssh_pwauth: True
+
+{% if admin_shadow_pass %}
+runcmd:
+  - [ bash, -c, "echo 'root:{{ admin_shadow_pass | safe }}' |chpasswd -e " ]
+{% endif %}
+
+--=={{ hadoop_group_id }}==
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="1init_script.sh"
+
+#!/bin/bash
+#==output to console==
+exec 1>/dev/console
+exec 2>/dev/console
+echo "====BEGIN rc.sh======="
+source /etc/profile
+ln -sf /usr/share/zoneinfo/Asia/Taipei /etc/localtime
+tee /etc/timezone <<<Asia/Taipei
+cd ~/
+echo "====Install boto"
+tee ~/.boto <<EOF
+[Credentials]
+aws_access_key_id = {{ ec2_access_key }}
+aws_secret_access_key = {{ ec2_secret_key }}
+
+[s3]
+host = {{ s3_host | safe }}
+calling_format = boto.s3.connection.OrdinaryCallingFormat
+
+[Boto]
+is_secure = False
+EOF
+echo "====Install hadoop setting"
+tee -a /etc/profile.d/custom_hadoop_env.sh <<EOF
+#!/bin/sh
+export OS_TENANT_ID={{ tenant_id }}
+export HADOOP_GROUP_ID={{ hadoop_group_id }}
+export HADOOP_MASTER_ID={{ hadoop_master_id }}
+export HADOOP_MASTER_NAME={{ hadoop_master_name }}
+export EC2_ACCESS_KEY={{ ec2_access_key }}
+export EC2_SECRET_KEY={{ ec2_secret_key }}
+EOF
+source /etc/profile
+echo "====Install jets3t setting and hadoop-core-fix"
+tee jets3t.properties <<EOF
+s3service.s3-endpoint={{ s3_host }}
+s3service.https-only=false
+s3service.s3-endpoint-http-port=80
+s3service.s3-endpoint-https-port=443
+s3service.disable-dns-buckets=true
+s3service.internal-error-retry-max=5
+httpclient.retry-max=5
+httpclient.connection-timeout-ms=60000
+httpclient.socket-timeout-ms=60000
+httpclient.max-connections=65535
+EOF
+zip -r /usr/lib/hadoop/hadoop-core-*.jar . -i jets3t.properties
+hadoop fs -get s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@custom-$OS_TENANT_ID/.hadoop/$HADOOP_GROUP_ID/init_script.zip /root/init_script.zip
+unzip init_script.zip
+cd ~/
+source /etc/profile
+source ~/.eucarc
+echo "====init_script.py======="
+python ~/files/init_script.py
+python ~/files/check_hadoop_deamon.py
+echo "=====END rc.sh========"
+{% if user_script %}
+--=={{ hadoop_group_id }}==
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="2user_data_script.sh"
+
+{{ user_script | safe }}
+{% endif %}

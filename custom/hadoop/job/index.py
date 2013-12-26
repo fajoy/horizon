@@ -74,100 +74,24 @@ class ScriptAction(workflows.Action):
     def get_help_text(self, extra_context=None):
         return """
 <ul class="nav nav-tabs">
+        <li class="">
+          <a href="#ex1action" data-toggle="tab" data-target="#ex1action">Boto</a>
+        </li>
         <li class="active">
-          <a href="#ex1action" data-toggle="tab" data-target="#ex1action">Put File</a>
+          <a href="#ex2action" data-toggle="tab" data-target="#ex2action">Put File</a>
         </li>
         <li class="">
-          <a href="#ex2action" data-toggle="tab" data-target="#ex2action">WordCount</a>
+          <a href="#ex3action" data-toggle="tab" data-target="#ex3action">WordCount</a>
         </li>
         <li class="">
-          <a href="#ex3action" data-toggle="tab" data-target="#ex3action">TeraSort</a>
+          <a href="#ex4action" data-toggle="tab" data-target="#ex4action">TeraSort</a>
         </li>
         <li class="">
-          <a href="#ex4action" data-toggle="tab" data-target="#ex4action">Streaming</a>
-        </li>
-        <li class="">
-          <a href="#ex4action" data-toggle="tab" data-target="#ex5action">Boto</a>
+          <a href="#ex5action" data-toggle="tab" data-target="#ex5action">Streaming</a>
         </li>
 </ul>
 <div class="tab-content dropdown_fix">
 <fieldset id="ex1action" class="js-tab-pane tab-pane active">
-Put file example
-<a id="add_script" class="btn add_script">copy</a>
-<pre id="ex1">
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
-apt-get install -y wget unzip
-wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-examples.jar.zip
-unzip hadoop-examples.jar.zip
-hadoop fs -put hadoop-examples.jar s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar 
-wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-streaming.jar.zip
-unzip hadoop-streaming.jar.zip
-hadoop fs -put hadoop-streaming.jar s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar
-</pre>
-</fieldset>
-         
-<fieldset id="ex2action" class="js-tab-pane tab-pane">
-WordCount example
-<a id="add_script" class="btn add_script">copy</a>
-<pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
-export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
-export jar=`basename ${jar_location}`
-export rtw_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw"
-export wc_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw_wc"
-export size="1024"
-export map_count="1"
-export reduce_count="1"
-hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} randomtextwriter -D test.randomtextwrite.bytes_per_map=$((${size}/${map_count})) -D test.randomtextwrite.total_bytes=${size} -outFormat org.apache.hadoop.mapred.TextOutputFormat ${rtw_out}
-hadoop job -history all ${rtw_out}
-hadoop jar ${jar} wordcount -D mapred.reduce.tasks=${reduce_count} ${rtw_out} ${wc_out}
-hadoop job -history all ${wc_out}
-</pre>
-</fieldset>
- 
-<fieldset id="ex3action" class="js-tab-pane tab-pane">
-TeraSort example
-<a id="add_script" class="btn add_script">copy</a>
-<pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
-export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
-export jar=`basename ${jar_location}`
-export teragen_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/teragen"
-export terasort_out="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/terasort"
-export size="1024"
-export map_count="1"
-export reduce_count="1"
-export task_max_ram="200m"
-export timeout="600000"
-export sample_size="100000"
-hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} teragen -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
-hadoop job -history all ${teragen_out}
-hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
-hadoop job -history all ${terasort_out}
-</pre>
-</fieldset>
- 
-<fieldset id="ex4action" class="js-tab-pane tab-pane">
-Hadoop Stream example
-<a id="add_script" class="btn add_script">copy</a>
-<pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
-export jar_location="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar"
-export jar=`basename ${jar_location}`
-export input="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/input"
-export output="s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/output"
-export mapper="/bin/cat"
-export reducer="/usr/bin/wc"
-export reduce_count="1"
-hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} -input ${input} -output ${output} -mapper ${mapper} -reducer ${reducer} -numReduceTasks ${reduce_count}
-hadoop job -history all ${output}
-</pre>
-</fieldset>
-
-<fieldset id="ex5action" class="js-tab-pane tab-pane">
 Boto example
 <a id="add_script" class="btn add_script">copy</a>
 <pre>
@@ -184,6 +108,81 @@ key = Key(bucket,"hello/hello.txt") #set key
 key.set_contents_from_string("hello world this is boto.") #put object
 key = bucket.lookup("hello/hello.txt") #get key
 print key.get_contents_as_string(headers={'Range' : 'bytes=0-11'}) #get object
+</pre>
+</fieldset>
+<fieldset id="ex2action" class="js-tab-pane tab-pane">
+Put file example
+<a id="add_script" class="btn add_script">copy</a>
+<pre>
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+apt-get install -y wget unzip
+wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-examples.jar.zip
+unzip hadoop-examples.jar.zip
+hadoop fs -put hadoop-examples.jar s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar 
+wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-streaming.jar.zip
+unzip hadoop-streaming.jar.zip
+hadoop fs -put hadoop-streaming.jar s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar
+</pre>
+</fieldset>
+         
+<fieldset id="ex3action" class="js-tab-pane tab-pane">
+WordCount example
+<a id="add_script" class="btn add_script">copy</a>
+<pre>
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
+export jar=`basename ${jar_location}`
+export rtw_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw"
+export wc_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw_wc"
+export size="1024"
+export map_count="1"
+export reduce_count="1"
+hadoop fs -get ${jar_location} ${jar}
+hadoop jar ${jar} randomtextwriter -D test.randomtextwrite.bytes_per_map=$((${size}/${map_count})) -D test.randomtextwrite.total_bytes=${size} -outFormat org.apache.hadoop.mapred.TextOutputFormat ${rtw_out}
+hadoop job -history all ${rtw_out}
+hadoop jar ${jar} wordcount -D mapred.reduce.tasks=${reduce_count} ${rtw_out} ${wc_out}
+hadoop job -history all ${wc_out}
+</pre>
+</fieldset>
+ 
+<fieldset id="ex4action" class="js-tab-pane tab-pane">
+TeraSort example
+<a id="add_script" class="btn add_script">copy</a>
+<pre>
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
+export jar=`basename ${jar_location}`
+export teragen_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/teragen"
+export terasort_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/terasort"
+export size="1024"
+export map_count="1"
+export reduce_count="1"
+export task_max_ram="200m"
+export timeout="600000"
+export sample_size="100000"
+hadoop fs -get ${jar_location} ${jar}
+hadoop jar ${jar} teragen -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} $((${size}/100)) ${teragen_out}
+hadoop job -history all ${teragen_out}
+hadoop jar ${jar} terasort -D mapred.task.timeout=${timeout} -D mapred.child.java.opts=-Xmx${task_max_ram} -D mapred.map.tasks=${map_count} -D mapred.reduce.tasks=${reduce_count} -D terasort.partitions.sample=${sample_size} ${teragen_out} ${terasort_out}
+hadoop job -history all ${terasort_out}
+</pre>
+</fieldset>
+ 
+<fieldset id="ex5action" class="js-tab-pane tab-pane">
+Hadoop Stream example
+<a id="add_script" class="btn add_script">copy</a>
+<pre>
+export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar"
+export jar=`basename ${jar_location}`
+export input="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/input"
+export output="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/output"
+export mapper="/bin/cat"
+export reducer="/usr/bin/wc"
+export reduce_count="1"
+hadoop fs -get ${jar_location} ${jar}
+hadoop jar ${jar} -input ${input} -output ${output} -mapper ${mapper} -reducer ${reducer} -numReduceTasks ${reduce_count}
+hadoop job -history all ${output}
 </pre>
 </fieldset>
 
@@ -270,13 +269,13 @@ class JarArgsAction(workflows.Action):
         return """
 JAR location example: 
 <pre>
-&lt;bucket_name&gt;/hadoop-examples.jar
+s3://&lt;bucket_name&gt;/hadoop-examples.jar
 </pre>
 JAR arguments example:
 <pre>
 wordcount 
-s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;input_path&gt;
-s3n://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;output_path&gt;
+s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;input_path&gt;
+s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;output_path&gt;
 </pre>
 """
 
@@ -369,19 +368,19 @@ class StreamingArgsAction(workflows.Action):
         return """
 Input location exmple: 
 <pre>
-&lt;bucket_name&gt;/input
+s3://&lt;bucket_name&gt;/input
 </pre>
 Output location exmple:
 <pre>
-&lt;bucket_name&gt;/output
+s3://&lt;bucket_name&gt;/output
 </pre>
 Mapper example: 
 <pre>
-&lt;bucket_name&gt;/string_tokenizer.py 
+s3://&lt;bucket_name&gt;/string_tokenizer.py 
 </pre>
 Reducer example:
 <pre>
-&lt;bucket_name&gt;/count.py 
+s3://&lt;bucket_name&gt;/count.py 
 </pre>
 Extra Arguments example (Option):
 <pre>
