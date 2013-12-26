@@ -383,7 +383,7 @@ Reducer example:
 <pre>
 &lt;bucket_name&gt;/count.py 
 </pre>
-Extea Arguments example (Option):
+Extra Arguments example (Option):
 <pre>
 -numReduceTasks [num]  ...etc.
 </pre>
