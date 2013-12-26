@@ -106,7 +106,7 @@ def handle_streaming(obj):
     os.chdir(dir_path)
     with open("/root/job/{id}/obj".format(**obj),"w") as fd:
         fd.write(json.dumps(obj))
-    obj["jar_filename"] = "/usr/lib/hadoop-*-mapreduce/contrib/streaming/hadoop-streaming-*.jar"
+    obj["jar_filename"] = "/usr/share/hadoop/contrib/streaming/hadoop-streaming*.jar"
     obj["mapper_filename"] = os.path.basename(obj["mapper"])
     obj["reducer_filename"] = os.path.basename(obj["reducer"])
     obj["jar_filepath"] = "/root/job/{id}/work/{jar_filename}".format(**obj)
