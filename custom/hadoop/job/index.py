@@ -398,7 +398,7 @@ class StreamingArgsStep(workflows.Step):
                     "mapper" ,
                     "reducer" ,
                     "other_location" ,
-                    "extea_args" ,
+                    "extra_args" ,
                     )
 
     def contribute(self, data, context):
@@ -435,7 +435,7 @@ class CreateStreamingWorkflow(workflows.Workflow):
         return message.format(**self.context)
 
     def handle(self, request, context):
-        context["extea_args"]=" ".join(context["extea_args"].split())
+        context["extra_args"]=" ".join(context["extra_args"].split())
         return hadoop.create_streaming(request,context)
 
 class CreateStreamingView(workflows.WorkflowView):
