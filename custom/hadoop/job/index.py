@@ -74,10 +74,10 @@ class ScriptAction(workflows.Action):
     def get_help_text(self, extra_context=None):
         return """
 <ul class="nav nav-tabs">
-        <li class="">
+        <li class="active">
           <a href="#ex1action" data-toggle="tab" data-target="#ex1action">Boto</a>
         </li>
-        <li class="active">
+        <li class="">
           <a href="#ex2action" data-toggle="tab" data-target="#ex2action">Put File</a>
         </li>
         <li class="">
