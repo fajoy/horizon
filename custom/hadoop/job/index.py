@@ -114,7 +114,7 @@ print key.get_contents_as_string(headers={'Range' : 'bytes=0-11'}) #get object
 Put file example
 <a id="add_script" class="btn add_script">copy</a>
 <pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export bucket=""   #change you bucket name 
 apt-get install -y wget unzip
 wget http://www.java2s.com/Code/JarDownload/hadoop/hadoop-examples.jar.zip
 unzip hadoop-examples.jar.zip
@@ -129,12 +129,12 @@ hadoop fs -put hadoop-streaming.jar s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucke
 WordCount example
 <a id="add_script" class="btn add_script">copy</a>
 <pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export bucket=""   #change you bucket name 
 export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
 export jar=`basename ${jar_location}`
 export rtw_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw"
 export wc_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw_wc"
-export size="1024"
+export size="1024000"
 export map_count="1"
 export reduce_count="1"
 hadoop fs -get ${jar_location} ${jar}
@@ -149,12 +149,12 @@ hadoop job -history all ${wc_out}
 TeraSort example
 <a id="add_script" class="btn add_script">copy</a>
 <pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export bucket=""   #change you bucket name 
 export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-examples.jar"
 export jar=`basename ${jar_location}`
 export teragen_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/teragen"
 export terasort_out="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/terasort"
-export size="1024"
+export size="1024000"
 export map_count="1"
 export reduce_count="1"
 export sample_size="100000"
@@ -167,19 +167,30 @@ hadoop job -history all ${terasort_out}
 </fieldset>
  
 <fieldset id="ex5action" class="js-tab-pane tab-pane">
-Hadoop Stream example
+Hadoop Streaming example
 <a id="add_script" class="btn add_script">copy</a>
 <pre>
-export bucket="&lt;bucket_name&gt;"   #change you bucket name 
+export bucket=""   #change you bucket name 
 export jar_location="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/hadoop-streaming.jar"
 export jar=`basename ${jar_location}`
-export input="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/input"
-export output="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/output"
-export mapper="/bin/cat"
-export reducer="/usr/bin/wc"
+export input="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/rtw"
+export output="s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@${bucket}/streaming_wc"
+tee ./string_tokenizer.awk&lt;&lt;EOF #make map code
+#!/usr/bin/awk -f
+{for(i=1;i<=NF;i++)  print \$i,1}
+EOF
+
+tee ./count.awk&lt;&lt;EOF #make reduce code
+#!/usr/bin/awk -f
+{count[\$1]+=\$2}
+END{for(word in count)print word,count[word]}
+EOF
+
+export mapper="string_tokenizer.awk"
+export reducer="count.awk"
 export reduce_count="1"
 hadoop fs -get ${jar_location} ${jar}
-hadoop jar ${jar} -input ${input} -output ${output} -mapper ${mapper} -reducer ${reducer} -numReduceTasks ${reduce_count}
+hadoop jar ${jar} -input ${input} -output ${output} -mapper ${mapper} -reducer ${reducer} -file ${mapper} -file ${reducer} -numReduceTasks ${reduce_count}
 hadoop job -history all ${output}
 </pre>
 </fieldset>
@@ -253,7 +264,7 @@ class JarArgsAction(workflows.Action):
 
     jar_location = forms.Field(label=("JAR location"),
                      required=True,
-                     help_text=_("ex: {bucket}/hadoop-example.jar"), )
+                     help_text=_("ex: s3://&lt;bucket_name&gt;/hadoop-example.jar"), )
 
     jar_args =  forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px;' }),
                             label=_("JAR arguments"),
@@ -272,8 +283,8 @@ s3://&lt;bucket_name&gt;/hadoop-examples.jar
 JAR arguments example:
 <pre>
 wordcount 
-s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;input_path&gt;
-s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/&lt;output_path&gt;
+s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/rtw;
+s3://$EC2_ACCESS_KEY:$EC2_SECRET_KEY@&lt;bucket_name&gt;/jar_wc;
 </pre>
 """
 
@@ -338,21 +349,21 @@ class StreamingArgsAction(workflows.Action):
 
     input_location = forms.Field(label=("Input location"),
                      required=True,
-                     help_text=escape("ex: &lt;bucket_name&gt;/input", ) )
+                     help_text=escape("ex: s3://&lt;bucket_name&gt;/rtw", ) )
 
     output_location = forms.Field(label=("Output location"),
                      required=True,
-                     help_text=escape("ex: &lt;bucket_name&gt;/output", ) )
+                     help_text=escape("ex: s3://&lt;bucket_name&gt;/streaming_wc", ) )
 
 
     mapper = forms.Field(label=("Mapper"),
                      required=True,
-                     help_text=escape("ex: &lt;bucket_name&gt;/mapper.py"), )
+                     help_text=escape("ex: s3://&lt;bucket_name&gt;/string_tokenizer.awk"), )
 
 
     reducer = forms.Field(label=("Reducer"),
                      required=True,
-                     help_text=escape("ex: &lt;bucket_name&gt;/reducer.py"), )
+                     help_text=escape("ex: s3://&lt;bucket_name&gt;/count.awk"), )
 
     extra_args = forms.Field( widget=forms.Textarea({'style':'margin: 0px 0px 0px; height: 300px;' }),
                             label=_("Extra Arguments (Option)"),
@@ -366,19 +377,19 @@ class StreamingArgsAction(workflows.Action):
         return """
 Input location exmple: 
 <pre>
-s3://&lt;bucket_name&gt;/input
+s3://&lt;bucket_name&gt;/rtw
 </pre>
 Output location exmple:
 <pre>
-s3://&lt;bucket_name&gt;/output
+s3://&lt;bucket_name&gt;/streaming_wc
 </pre>
 Mapper example: 
 <pre>
-s3://&lt;bucket_name&gt;/string_tokenizer.py 
+s3://&lt;bucket_name&gt;/string_tokenizer.awk
 </pre>
 Reducer example:
 <pre>
-s3://&lt;bucket_name&gt;/count.py 
+s3://&lt;bucket_name&gt;/count.awk
 </pre>
 Extra Arguments example (Option):
 <pre>
@@ -391,7 +402,7 @@ class StreamingArgsStep(workflows.Step):
     action_class = StreamingArgsAction
     contributes = ( 
                     "input_location" ,
-                    "output_localtion" ,
+                    "output_location" ,
                     "mapper" ,
                     "reducer" ,
                     "other_location" ,
